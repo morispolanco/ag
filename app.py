@@ -4,7 +4,7 @@ import requests
 import json
 import datetime
 import io
-
+Crea un sistema de inicio de sesión de usuarios y una página de administrador. El administrador crea los usuarios con su correo, es decir, les asigna el correo y la contraseña. Solo los usuarios autorizados por el administrador pueden acceder. Cada usuario nuevo recibe una aplicación que es blanca.
 st.set_page_config(
     page_title="Ecosistema de Agentes Inteligentes",
     page_icon="🏢",
