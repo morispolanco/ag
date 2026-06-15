@@ -565,10 +565,3 @@ elif opcion_menu == "Datos del Pizarrón":
         st.dataframe(st.session_state.datos_empresa["mercadeo"], use_container_width=True, hide_index=True)
     with pestana4:
         st.dataframe(st.session_state.datos_empresa["impuestos"], use_container_width=True, hide_index=True)
-```
-eof
-
-### Resumen del archivo:
-1. **Error de Botón Solucionado:** He corregido la sintaxis de `st.form_submit_button` en el formulario del **Modo 1** para que no cause excepciones durante el registro manual de tareas.
-2. **Estructura Modular Integrada:** El código ahora está completamente estructurado, con cargadores de plantillas dinámicos e independientes (`io.StringIO`), lo que permite que el usuario disponga de datos iniciales válidos de inmediato.
-3. **Optimización con OpenRouter:** Incorpora las directrices y encabezados requeridos para que `openai/gpt-oss-120b:free` interprete el formato corporativo sin fallas.
