@@ -113,16 +113,17 @@ if "config_empresa" not in st.session_state:
         "tipo": "Comercial / Retail de Tecnología",
         "direccion": "Avenida Reforma 12-56, Zona 10, Guatemala",
         "nit": "9876543-2",
-        "metas": "Maximizar el flujo de caja, reducir inventario estancado de baja rotación y provisionar correctamente los pagos de impuestos de fin de mes."
+        "metas": "Maximizar el flujo de caja, reducir inventario estancado de baja rotación y provisionar correctamente los pagos de impuestos de fin de mes.",
+        "moneda": "$"
     }
 
+# Inicialización segura e incremental de las bases de datos compartidas
 if "datos_empresa" not in st.session_state:
-    st.session_state.datos_empresa = {
-        "inventario": pd.read_csv(io.StringIO(PLANTILLAS_CSV["inventario"])),
-        "caja": pd.read_csv(io.StringIO(PLANTILLAS_CSV["caja"])),
-        "mercadeo": pd.read_csv(io.StringIO(PLANTILLAS_CSV["mercadeo"])),
-        "impuestos": pd.read_csv(io.StringIO(PLANTILLAS_CSV["impuestos"]))
-    }
+    st.session_state.datos_empresa = {}
+
+for clave, plantilla_raw in PLANTILLAS_CSV.items():
+    if clave not in st.session_state.datos_empresa:
+        st.session_state.datos_empresa[clave] = pd.read_csv(io.StringIO(plantilla_raw))
 
 if "tareas" not in st.session_state:
     st.session_state.tareas = [
@@ -173,6 +174,7 @@ def construir_contexto_empresa():
     mkt = st.session_state.datos_empresa["mercadeo"].to_string()
     imp = st.session_state.datos_empresa["impuestos"].to_string()
     tareas = json.dumps(st.session_state.tareas, indent=2)
+    moneda = config.get("moneda", "$")
     
     contexto = f"""
     --- PERFIL INSTITUCIONAL DE LA EMPRESA ---
@@ -181,18 +183,19 @@ def construir_contexto_empresa():
     Ubicación Central: {config['direccion']}
     Identificación Fiscal (NIT): {config['nit']}
     Metas Corporativas: {config['metas']}
+    Moneda Oficial Definida por el Usuario: {moneda}
 
     --- BASE DE DATOS COMPARTIDA (PIZARRÓN DE CONTROL EN TIEMPO REAL) ---
-    [DEPARTAMENTO DE INVENTARIO]
+    [DEPARTAMENTO DE INVENTARIO] (Los valores monetarios como costo y precio están en la divisa: {moneda})
     {inv}
     
-    [DEPARTAMENTO FINANCIERO - FLUJO DE CAJA]
+    [DEPARTAMENTO FINANCIERO - FLUJO DE CAJA] (Los ingresos, egresos y saldos acumulados corresponden a la divisa: {moneda})
     {caja}
     
-    [DEPARTAMENTO DE MERCADEO Y CAMPAÑAS]
+    [DEPARTAMENTO DE MERCADEO Y CAMPAÑAS] (Los presupuestos y gastos están medidos en la divisa: {moneda})
     {mkt}
 
-    [DEPARTAMENTO DE IMPUESTOS Y FISCAL]
+    [DEPARTAMENTO DE IMPUESTOS Y FISCAL] (Las bases imponibles y montos determinados están en la divisa: {moneda})
     {imp}
 
     [REGISTRO DE TAREAS DIARIAS EN CURSO]
@@ -202,21 +205,27 @@ def construir_contexto_empresa():
 
 def obtener_prompt_agente(rol):
     contexto = construir_contexto_empresa()
+    moneda = st.session_state.config_empresa.get("moneda", "$")
     
     prompts = {
         "Director General": f"""Eres el Agente Director General (CEO) de la empresa. Tu deber primordial es liderar y coordinar a tus agentes especialistas (Financiero, Inventario, Impuestos y Mercadeo). Tienes una visión global del negocio. Tu tono es profesional, analítico y altamente estratégico. Al responder, evalúa los datos históricos de todas las áreas, señala ineficiencias (por ejemplo: baja rotación en inventarios, impuestos de alto impacto, fugas de dinero en caja o campañas con baja conversión) y explica cómo tus subordinados se van a coordinar para resolverlo de inmediato.
+        IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
         "Financiero": f"""Eres el Agente Financiero de la empresa. Te encargas de custodiar el dinero de la caja, evaluar márgenes de utilidad de los productos vendidos y vigilar el presupuesto disponible. Debes alertar al CEO si el flujo de caja operativo es deficiente para cubrir las obligaciones de nómina, impuestos o inversiones publicitarias de Mercadeo. Trabaja en sintonía con Inventario para evaluar compras lógicas y con Impuestos para asegurar provisiones.
+        IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
         "Inventario": f"""Eres el Agente de Inventario. Gestionas el stock de productos, vigilas las mermas, controlas las rotaciones (Alta, Media, Baja) y configuras alertas de stock crítico frente a valores mínimos de seguridad. Trabajas en conjunto con el Financiero para autorizar nuevas compras basadas en liquidez y con el Agente de Mercadeo para armar ofertas sobre productos con rotación 'Baja'.
+        IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
         "Impuestos": f"""Eres el Agente de Impuestos y Control Fiscal. Eres responsable de que la empresa se encuentre al día con el fisco, previendo pagos de IVA, ISR y retenciones de manera oportuna. Debes alertar al Financiero sobre los montos que deben estar resguardados en caja para el pago de impuestos pendientes para evitar multas penales u operativas.
+        IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
         "Mercadeo": f"""Eres el Agente de Mercadeo. Tu foco es maximizar la visibilidad de la marca, generar leads calificados y optimizar la tasa de conversión de las campañas de publicidad. Debes utilizar los datos del Agente de Inventario para saber qué productos necesitan pauta urgente (baja rotación) y reportar al Financiero el Retorno de Inversión publicitaria (ROI) para solicitar presupuesto adicional.
+        IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}"""
     }
     return prompts.get(rol, contexto)
@@ -260,10 +269,36 @@ with st.sidebar:
     st.session_state.config_empresa["direccion"] = st.text_input("Domicilio Fiscal:", st.session_state.config_empresa["direccion"])
     st.session_state.config_empresa["nit"] = st.text_input("NIT de la Empresa:", st.session_state.config_empresa["nit"])
     st.session_state.config_empresa["metas"] = st.text_area("Objetivos de Operaciones:", st.session_state.config_empresa["metas"])
+    
+    # Selector de Divisas Corporativas
+    moneda_actual = st.session_state.config_empresa.get("moneda", "$")
+    lista_opciones_divisa = ["$", "Q", "€", "MXN", "COP", "CLP", "PEN", "Bs.", "HNL", "NIO", "CRC", "Personalizado"]
+    
+    try:
+        def_idx = lista_opciones_divisa.index(moneda_actual)
+    except ValueError:
+        def_idx = 11  # Indice para "Personalizado" si no está en la lista común
+        
+    moneda_seleccionada = st.selectbox(
+        "Moneda / Divisa:",
+        options=lista_opciones_divisa,
+        index=def_idx,
+        help="Elige el símbolo o divisa predeterminado para tus reportes e informes de agentes."
+    )
+    
+    if moneda_seleccionada == "Personalizado":
+        st.session_state.config_empresa["moneda"] = st.text_input(
+            "Especifica el símbolo de tu moneda:", 
+            value=moneda_actual if moneda_actual != "Personalizado" else "$"
+        )
+    else:
+        st.session_state.config_empresa["moneda"] = moneda_seleccionada
 
 if opcion_menu == "Dashboard General":
     st.header("📈 Informe del Agente Director General")
     st.write("Análisis general de la empresa recopilado de forma cruzada por los agentes a cargo de los datos.")
+    
+    moneda = st.session_state.config_empresa.get("moneda", "$")
     
     try:
         df_inv = st.session_state.datos_empresa["inventario"]
@@ -282,12 +317,12 @@ if opcion_menu == "Dashboard General":
     with col_m1:
         st.markdown(f"""<div class='metric-container'>
             <small style='color: #64748b;'>📦 Valor de Inventario</small><br>
-            <b style='font-size: 22px; color: #0f172a;'>$ {val_inv:,.2f}</b>
+            <b style='font-size: 22px; color: #0f172a;'>{moneda} {val_inv:,.2f}</b>
         </div>""", unsafe_allow_html=True)
     with col_m2:
         st.markdown(f"""<div class='metric-container'>
             <small style='color: #64748b;'>💰 Saldo Actual en Caja</small><br>
-            <b style='font-size: 22px; color: #16a34a;'>$ {caja_act:,.2f}</b>
+            <b style='font-size: 22px; color: #16a34a;'>{moneda} {caja_act:,.2f}</b>
         </div>""", unsafe_allow_html=True)
     with col_m3:
         st.markdown(f"""<div class='metric-container'>
@@ -297,7 +332,7 @@ if opcion_menu == "Dashboard General":
     with col_m4:
         st.markdown(f"""<div class='metric-container'>
             <small style='color: #64748b;'>⚖️ Impuestos por Pagar</small><br>
-            <b style='font-size: 22px; color: #dc2626;'>$ {imp_pend:,.2f}</b>
+            <b style='font-size: 22px; color: #dc2626;'>{moneda} {imp_pend:,.2f}</b>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -305,7 +340,7 @@ if opcion_menu == "Dashboard General":
     if st.button("🔄 Generar Informe de Auditoría Operativa con el Director General"):
         with st.spinner("El CEO está llamando a los jefes de departamento y leyendo los libros de control corporativo..."):
             prompt_sys = obtener_prompt_agente("Director General")
-            prompt_user = "Analiza detalladamente los números que tenemos en inventario, balances de caja, rendimiento de publicidad y obligaciones tributarias pendientes. Reporta de forma ejecutiva un diagnóstico crítico de la situación."
+            prompt_user = f"Analiza detalladamente los números que tenemos en inventario, balances de caja, rendimiento de publicidad y obligaciones tributarias pendientes. Reporta de forma ejecutiva un diagnóstico crítico de la situación. Recuerda usar siempre la moneda '{moneda}' en tu respuesta."
             informe = consultar_openrouter(prompt_sys, prompt_user)
             st.session_state.ultimo_informe = informe
             st.rerun()
@@ -402,16 +437,19 @@ elif opcion_menu == "Asignación de Tareas":
     st.subheader("🤖 Modo 3: Piloto Automático de Dirección")
     st.write("El Director General revisa el rendimiento global de la empresa y diseña de forma autónoma misiones de urgencia para resolver cuellos de botella detectados.")
     
+    moneda = st.session_state.config_empresa.get("moneda", "$")
+
     if st.button("🚀 Iniciar Generación en Piloto Automático"):
         with st.spinner("El CEO está examinando las tablas compartidas de impuestos pendientes, rotaciones y dinero disponible..."):
             prompt_sys = obtener_prompt_agente("Director General")
-            prompt_user = """Evalúa exhaustivamente el estado corporativo y genera un plan de 4 tareas de alta prioridad para hoy (una para cada especialista: Financiero, Inventario, Impuestos, Mercadeo).
-            Debes retornar ÚNICAMENTE un arreglo con formato JSON estricto, sin explicaciones previas ni finales:
+            prompt_user = f"""Evalúa exhaustivamente el estado corporativo y genera un plan de 4 tareas de alta prioridad para hoy (una para cada especialista: Financiero, Inventario, Impuestos, Mercadeo).
+            Debes retornar ÚNICAMENTE un arreglo con formato JSON estricto, sin explicaciones previas ni finales. 
+            IMPORTANTE: Si mencionas montos o presupuestos en las tareas, utiliza obligatoriamente la divisa oficial definida: {moneda}.
             [
-              {"agente": "Financiero", "descripcion": "Tarea específica basada en saldo actual o egresos"},
-              {"agente": "Inventario", "descripcion": "Tarea para mitigar productos de rotacion baja o stock critico"},
-              {"agente": "Impuestos", "descripcion": "Misión para calcular o liquidar obligaciones próximas al vencimiento"},
-              {"agente": "Mercadeo", "descripcion": "Estrategia puntual de venta basada en productos excedentes"}
+              {{"agente": "Financiero", "descripcion": "Tarea específica basada en saldo actual o egresos"}},
+              {{"agente": "Inventario", "descripcion": "Tarea para mitigar productos de rotacion baja o stock critico"}},
+              {{"agente": "Impuestos", "descripcion": "Misión para calcular o liquidar obligaciones próximas al vencimiento"}},
+              {{"agente": "Mercadeo", "descripcion": "Estrategia puntual de venta basada en productos excedentes"}}
             ]"""
             
             respuesta = consultar_openrouter(prompt_sys, prompt_user)
@@ -530,7 +568,8 @@ elif opcion_menu == "Chatbot con Agentes":
     st.write("Habla de manera interactiva con tus agentes especialistas. Cada agente conoce la base de datos compartida y cooperará para ayudarte a cumplir tus metas estratégicas.")
     
     interlocutor_activo = st.selectbox("Convocar a reunión a:", ["Director General", "Financiero", "Inventario", "Impuestos", "Mercadeo"])
-    
+    moneda = st.session_state.config_empresa.get("moneda", "$")
+
     for msj in st.session_state.historial_chat:
         clase_b = "user-bubble" if msj["rol"] == "Usuario" else "agent-bubble"
         st.markdown(f"<div class='chat-bubble {clase_b}'><b>{msj['rol']}:</b><br>{msj['mensaje']}</div>", unsafe_allow_html=True)
@@ -545,7 +584,7 @@ elif opcion_menu == "Chatbot con Agentes":
         with st.spinner(f"El Agente {interlocutor_activo} está analizando las transacciones y preparando su respuesta..."):
             prompt_sys = obtener_prompt_agente(interlocutor_activo)
             dialogo_historico = "\n".join([f"{m['rol']}: {m['mensaje']}" for m in st.session_state.historial_chat[-6:]])
-            prompt_completo = f"Historial de conversación reciente:\n{dialogo_historico}\n\nNueva intervención del usuario: {input_usr}"
+            prompt_completo = f"Historial de conversación reciente:\n{dialogo_historico}\n\nNueva intervención del usuario: {input_usr}\n\nRecuerda usar la divisa oficial definida en el perfil: {moneda}."
             
             respuesta_agente = consultar_openrouter(prompt_sys, prompt_completo)
             st.session_state.historial_chat.append({"rol": interlocutor_activo, "mensaje": respuesta_agente})
