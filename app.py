@@ -4,7 +4,8 @@ import requests
 import json
 import datetime
 import io
-Crea un sistema de inicio de sesión de usuarios y una página de administrador. El administrador crea los usuarios con su correo, es decir, les asigna el correo y la contraseña. Solo los usuarios autorizados por el administrador pueden acceder. Cada usuario nuevo recibe una aplicación que es blanca.
+import os
+
 st.set_page_config(
     page_title="Ecosistema de Agentes Inteligentes",
     page_icon="🏢",
@@ -12,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos personalizados para crear una UI premium y adaptativa
+# Estilos personalizados para crear una UI premium, limpia y adaptativa
 st.markdown("""
     <style>
     .main .block-container { padding-top: 1.5rem; }
@@ -66,78 +67,398 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# CONSTANTES Y PLANTILLAS DE DATOS
+# ==========================================
+DB_FILE = "db.json"
+
 PLANTILLAS_CSV = {
     "inventario": (
         "ID_Producto,Producto,Categoria,Cantidad,Costo_Unitario,Precio_Venta,Rotacion,Stock_Minimo\n"
-        "PROD001,Laptop Dell Inspiron 15,Tecnología,15,450.00,750.00,Alta,5\n"
-        "PROD002,Monitor Samsung 24 IPS,Tecnología,40,110.00,195.00,Media,10\n"
-        "PROD003,Teclado Mecánico RGB,Accesorios,8,35.00,69.99,Baja,5\n"
-        "PROD004,Mouse Ergonómico Inalámbrico,Accesorios,25,18.50,39.99,Alta,8\n"
-        "PROD005,Impresora HP DeskJet,Oficina,4,125.00,249.99,Baja,3\n"
-        "PROD006,Escritorio de Madera Modular,Oficina,12,180.00,299.90,Media,4"
+        "FERR001,Rotomartillo Industrial 800W DeWalt,Herramientas Eléctricas,18,120.00,195.00,Alta,5\n"
+        "FERR002,Pintura Impermeabilizante Galón Corona,Pinturas,45,22.00,38.50,Alta,10\n"
+        "FERR003,Saco de Cemento Gris Portland 50kg,Construcción,250,5.50,7.20,Alta,50\n"
+        "FERR004,Juego de Destornilladores 10 pzs Stanley,Herramientas Manuales,12,14.00,24.99,Media,5\n"
+        "FERR005,Tubo PVC de Presión 1/2 pulgada,Plomería,150,1.20,2.10,Media,30\n"
+        "FERR006,Caja de Clavos de Acero 2 pulgadas,Fijaciones,8,6.50,11.00,Baja,10\n"
+        "FERR007,Cortadora de Metales 14 DeWalt,Herramientas Eléctricas,8,185.00,299.00,Media,3\n"
+        "FERR008,Varilla de Hierro Corrugado 3/8,Construcción,500,2.10,3.50,Alta,100\n"
+        "FERR009,Generador Eléctrico Portátil 3500W,Maquinaria,5,320.00,550.00,Baja,2\n"
+        "FERR010,Cerradura de Sobreponer Standard Yale,Cerrajería,35,11.50,19.90,Alta,8\n"
+        "FERR011,Escalera de Aluminio Extensible 24 peldaños,Equipamiento,10,85.00,149.00,Media,3\n"
+        "FERR012,Lámina de Zinc Acanalada 3x10 pies,Construcción,120,8.50,14.00,Alta,25\n"
+        "FERR013,Cable Eléctrico THHN N12 (Rollo 100m),Electricidad,40,28.00,45.00,Alta,10\n"
+        "FERR014,Pistola de Calor Profesional 2000W Bosch,Herramientas Eléctricas,15,45.00,79.00,Media,4\n"
+        "FERR015,Lana de Vidrio Aislante (Rollo),Construcción,14,35.00,60.00,Baja,5"
     ),
     "caja": (
         "Fecha,Concepto,Categoria,Ingreso,Egreso,Saldo_Acumulado,Metodo_Pago\n"
-        "2026-06-10,Saldo inicial de operaciones,Apertura,5000.00,0.00,5000.00,Transferencia\n"
-        "2026-06-11,Venta de 3 Laptops Dell,Ventas,2250.00,0.00,7250.00,Efectivo\n"
-        "2026-06-12,Pago de Energía Eléctrica y Luz,Servicios,0.00,185.50,7064.50,Debito\n"
-        "2026-06-13,Adquisición de stock Accesorios,Inventario,0.00,450.00,6614.50,Transferencia\n"
-        "2026-06-14,Cobro Factura de Cliente Frecuente,Ventas,1200.00,0.00,7814.50,Cheque\n"
-        "2026-06-14,Pago de pauta publicitaria digital,Mercadeo,0.00,250.00,7564.50,Credito"
+        "2026-06-10,Saldo inicial de caja y bancos,Apertura,12000.00,0.00,12000.00,Transferencia\n"
+        "2026-06-11,Venta de materials a Constructora Alfa,Ventas,4500.00,0.00,16500.00,Transferencia\n"
+        "2026-06-12,Flete de entrega de cemento,Logística,0.00,320.00,16180.00,Cheque\n"
+        "2026-06-13,Compra de stock de herramientas Stanley,Inventario,0.00,1500.00,14680.00,Transferencia\n"
+        "2026-06-14,Venta de 3 Rotomartillos DeWalt,Ventas,585.00,0.00,15265.00,Tarjeta\n"
+        "2026-06-14,Pauta publicitaria Campaña Lluvias,Mercadeo,0.00,250.00,15015.00,Tarjeta\n"
+        "2026-06-15,Venta mostrador herramientas manuales,Ventas,920.00,0.00,15935.00,Efectivo\n"
+        "2026-06-15,Pago de factura distribuidora de hierro,Inventario,0.00,2100.00,13835.00,Transferencia\n"
+        "2026-06-16,Venta de cemento y hierro a Constructora Beta,Ventas,3400.00,0.00,17235.00,Transferencia\n"
+        "2026-06-16,Pago de planilla de operarios quincenal,Planilla,0.00,1800.00,15435.00,Transferencia\n"
+        "2026-06-17,Pago servicio de agua y telefonía,Servicios,0.00,120.00,15315.00,Debito\n"
+        "2026-06-17,Venta mostrador plomería y electricidad,Ventas,1150.00,0.00,16465.00,Efectivo"
     ),
     "mercadeo": (
         "ID_Campana,Campana,Canal,Presupuesto_Asignado,Gasto_Actual,Leads_Generados,Conversiones,Estado\n"
-        "CAMP001,Cyber Monday Especial,Meta Ads,350.00,320.00,150,12,Activa\n"
-        "CAMP002,Descuento Mayoristas,Email Marketing,50.00,45.00,80,18,Completada\n"
-        "CAMP003,Inauguración Nueva Sucursal,Google Ads,500.00,150.00,200,5,Activa\n"
-        "CAMP004,Liquidación Stock Teclados,TikTok Ads,120.00,120.00,95,8,Pausada"
+        "CAMP001,Evita Goteras (Impermeabilizantes),Meta Ads,300.00,280.00,320,42,Activa\n"
+        "CAMP002,Constructores Aliados (Descuento),Email Marketing,100.00,85.00,140,24,Activa\n"
+        "CAMP003,Feria del Desarmador Stanley,Google Ads,150.00,150.00,98,12,Completada\n"
+        "CAMP004,Remate de Lámparas de Exterior,TikTok Ads,120.00,45.00,110,6,Pausada\n"
+        "CAMP005,Equipamiento Eléctrico DeWalt,Google Ads,400.00,120.00,180,15,Activa\n"
+        "CAMP006,Descuento Acero de Refuerzo,WhatsApp Business,50.00,25.00,310,48,Activa\n"
+        "CAMP007,Pinturas de Exterior Temporada Alta,Meta Ads,250.00,250.00,195,18,Completada"
     ),
     "impuestos": (
         "Periodo,Impuesto,Base_Imponible,Tasa,Monto_Determinado,Estado_Pago,Fecha_Vencimiento\n"
-        "2026-05,IVA General Mensual,12500.00,0.12,1500.00,Presentado,2026-06-30\n"
-        "2026-05,Pago Trimestral ISR,45000.00,0.05,2250.00,Pendiente,2026-07-15\n"
-        "2026-05,Retenciones de ISR a Terceros,3200.00,0.05,160.00,Presentado,2026-06-28\n"
-        "2026-06,Provision Mensual Impuestos,8500.00,0.12,1020.00,Pendiente,2026-07-31"
+        "2026-05,IVA General Mensual Ferretería,35000.00,0.12,4200.00,Presentado,2026-06-30\n"
+        "2026-05,Retención ISR de Constructores,12500.00,0.05,625.00,Presentado,2026-06-28\n"
+        "2026-05,Impuesto Sobre la Renta Mensual,45000.00,0.07,3150.00,Pendiente,2026-07-15\n"
+        "2026-06,Previsión IVA del Mes Corriente,18500.00,0.12,2220.00,Pendiente,2026-07-31\n"
+        "2026-06,ISR Retenciones por Salarios,8000.00,0.05,400.00,Pendiente,2026-07-10\n"
+        "2026-05,Impuesto Único Sobre Inmuebles (IUSI),15000.00,0.009,135.00,Presentado,2026-06-30"
     )
 }
 
+BLANCO_INVENTARIO = "ID_Producto,Producto,Categoria,Cantidad,Costo_Unitario,Precio_Venta,Rotacion,Stock_Minimo\n"
+BLANCO_CAJA = "Fecha,Concepto,Categoria,Ingreso,Egreso,Saldo_Acumulado,Metodo_Pago\n"
+BLANCO_MERCADEO = "ID_Campana,Campana,Canal,Presupuesto_Asignado,Gasto_Actual,Leads_Generados,Conversiones,Estado\n"
+BLANCO_IMPUESTOS = "Periodo,Impuesto,Base_Imponible,Tasa,Monto_Determinado,Estado_Pago,Fecha_Vencimiento\n"
+
+# ==========================================
+# MANEJO DE BASE DE DATOS (JSON PERSISTENTE)
+# ==========================================
+def cargar_db():
+    if not os.path.exists(DB_FILE):
+        db = {
+            "usuarios": {
+                "admin@empresa.com": {
+                    "password": "admin123",
+                    "autorizado": True,
+                    "rol": "admin"
+                },
+                "demo@ferreteria.com": {
+                    "password": "demo123",
+                    "autorizado": True,
+                    "rol": "usuario",
+                    "config_empresa": {
+                        "nombre": "Ferretería El Tornillo Gigante, S.A.",
+                        "tipo": "Ferretería Industrial y Materiales de Construcción",
+                        "direccion": "Calzada Aguilar Batres 34-10, Zona 11, Guatemala",
+                        "nit": "9876543-2",
+                        "metas": "Optimizar el stock de materiales pesados (cemento, hierro), liquidar el excedente de pintura impermeabilizante antes de que terminen las lluvias, y resguardar la caja para la provisión fiscal de fin de mes.",
+                        "moneda": "$"
+                    },
+                    "datos_empresa": {
+                        "inventario": pd.read_csv(io.StringIO(PLANTILLAS_CSV["inventario"])).to_dict(orient="records"),
+                        "caja": pd.read_csv(io.StringIO(PLANTILLAS_CSV["caja"])).to_dict(orient="records"),
+                        "mercadeo": pd.read_csv(io.StringIO(PLANTILLAS_CSV["mercadeo"])).to_dict(orient="records"),
+                        "impuestos": pd.read_csv(io.StringIO(PLANTILLAS_CSV["impuestos"])).to_dict(orient="records")
+                    },
+                    "tareas": [
+                        {"id": 1, "agente": "Financiero", "descripcion": "Validar liquidez disponible en caja para cubrir el pedido masivo de cemento Portland.", "estado": "Pendiente", "fecha": "2026-06-14"},
+                        {"id": 2, "agente": "Inventario", "descripcion": "Monitorear el stock de Cemento Portland (stock mínimo de seguridad: 50 sacos).", "estado": "Pendiente", "fecha": "2026-06-14"},
+                        {"id": 3, "agente": "Impuestos", "descripcion": "Prever el pago del Impuesto Sobre la Renta (ISR) Mensual del período de mayo.", "estado": "Pendiente", "fecha": "2026-06-14"},
+                        {"id": 4, "agente": "Mercadeo", "descripcion": "Impulsar las conversiones de la campaña 'Evita Goteras' para liquidar la pintura impermeabilizante.", "estado": "Pendiente", "fecha": "2026-06-14"}
+                    ],
+                    "historial_chat": [
+                        {"rol": "Director General", "mensaje": "Saludos. Soy el Director General de Ferretería El Tornillo Gigante, S.A. Tengo acceso inmediato al inventario de materiales y herramientas, movimientos de caja de la sucursal, provisión fiscal y campañas publicitarias de temporada. ¿Qué objetivos ferreteros coordinamos hoy?"}
+                    ]
+                }
+            }
+        }
+        guardar_db(db)
+        return db
+    try:
+        with open(DB_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        # En caso de corrupción, devolver estructura básica de resguardo
+        return {"usuarios": {}}
+
+def guardar_db(db):
+    try:
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(db, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        st.error(f"Fallo al guardar en base de datos: {str(e)}")
+
+# Guardar datos del usuario activo al realizar cualquier cambio
+def guardar_datos_usuario_actual():
+    if st.session_state.get("logged_in") and st.session_state.get("rol_actual") != "admin":
+        db = cargar_db()
+        email = st.session_state.usuario_actual
+        if email in db["usuarios"]:
+            db["usuarios"][email]["config_empresa"] = st.session_state.config_empresa
+            
+            # Serializamos los DataFrames a diccionarios
+            db["usuarios"][email]["datos_empresa"] = {
+                k: v.to_dict(orient="records") if isinstance(v, pd.DataFrame) else v
+                for k, v in st.session_state.datos_empresa.items()
+            }
+            db["usuarios"][email]["tareas"] = st.session_state.tareas
+            db["usuarios"][email]["historial_chat"] = st.session_state.historial_chat
+            guardar_db(db)
+
+# ==========================================
+# CONTROL DE SESIONES E INICIO DE SESIÓN
+# ==========================================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.usuario_actual = ""
+    st.session_state.rol_actual = ""
+
+db_actual = cargar_db()
+
+# Pantalla de Login si no está autenticado
+if not st.session_state.logged_in:
+    st.title("🏢 Ecosistema de Agentes Inteligentes")
+    st.subheader("Control Corporativo Multi-Agente con IA")
+    
+    col_log1, col_log2, col_log3 = st.columns([1, 1.5, 1])
+    with col_log2:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        with st.form("form_inicio_sesion", clear_on_submit=False):
+            st.markdown("### 🔐 Acceso Autorizado")
+            correo_ingresado = st.text_input("Correo Electrónico:", placeholder="ejemplo@empresa.com").strip().lower()
+            password_ingresado = st.text_input("Contraseña:", type="password", placeholder="••••••••")
+            boton_login = st.form_submit_button("Iniciar Sesión")
+            
+            if boton_login:
+                if correo_ingresado in db_actual["usuarios"]:
+                    datos_usr = db_actual["usuarios"][correo_ingresado]
+                    if datos_usr["password"] == password_ingresado:
+                        if datos_usr.get("autorizado", False):
+                            st.session_state.logged_in = True
+                            st.session_state.usuario_actual = correo_ingresado
+                            st.session_state.rol_actual = datos_usr.get("rol", "usuario")
+                            
+                            # Cargar información del perfil de sesión
+                            if st.session_state.rol_actual != "admin":
+                                st.session_state.config_empresa = datos_usr["config_empresa"]
+                                st.session_state.datos_empresa = {
+                                    k: pd.DataFrame(v) for k, v in datos_usr["datos_empresa"].items()
+                                }
+                                st.session_state.tareas = datos_usr["tareas"]
+                                st.session_state.historial_chat = datos_usr["historial_chat"]
+                            
+                            st.success("¡Acceso concedido! Cargando centro de control...")
+                            st.rerun()
+                        else:
+                            st.error("⚠️ Acceso Denegado: Tu usuario no ha sido autorizado por el administrador todavía.")
+                    else:
+                        st.error("❌ Contraseña incorrecta. Inténtalo de nuevo.")
+                else:
+                    st.error("❌ El correo ingresado no está registrado en el ecosistema.")
+        
+        # Informativo de credenciales por defecto para el evaluador
+        with st.expander("ℹ️ Información de Cuentas de Prueba"):
+            st.markdown("""
+            - **Administrador General:**
+              - *Correo:* `admin@empresa.com`
+              - *Contraseña:* `admin123`
+            - **Usuario Demostración (Ferretería con datos cargados):**
+              - *Correo:* `demo@ferreteria.com`
+              - *Contraseña:* `demo123`
+            """)
+    st.stop()
+
+# ==========================================
+# MENU LATERAL - SÓLO PARA LOGUEADOS
+# ==========================================
 if "api_key" not in st.session_state:
     try:
         st.session_state.api_key = st.secrets["OPENROUTER_API_KEY"]
     except Exception:
         st.session_state.api_key = ""
 
-if "config_empresa" not in st.session_state:
-    st.session_state.config_empresa = {
-        "nombre": "Corporación Alfa, S.A.",
-        "tipo": "Comercial / Retail de Tecnología",
-        "direccion": "Avenida Reforma 12-56, Zona 10, Guatemala",
-        "nit": "9876543-2",
-        "metas": "Maximizar el flujo de caja, reducir inventario estancado de baja rotación y provisionar correctamente los pagos de impuestos de fin de mes.",
-        "moneda": "$"
-    }
+with st.sidebar:
+    st.markdown(f"👤 **Sesión Activa:** `{st.session_state.usuario_actual}`")
+    st.markdown(f"🏷️ **Rol:** `{st.session_state.rol_actual.capitalize()}`")
+    
+    st.markdown("---")
+    st.header("📌 Navegación")
+    
+    opciones_menu = []
+    # El administrador puede gestionar usuarios, y si lo desea, también probar el pizarrón de prueba
+    if st.session_state.rol_actual == "admin":
+        opciones_menu.append("👥 Control del Administrador")
+    
+    opciones_menu.extend([
+        "Dashboard General", 
+        "Carga y Plantillas CSV", 
+        "Asignación de Tareas", 
+        "Chatbot con Agentes", 
+        "Datos del Pizarrón"
+    ])
+    
+    opcion_menu = st.radio("Secciones de Trabajo:", opciones_menu)
+    
+    # Si el usuario actual es normal, puede configurar su propio perfil empresarial
+    if st.session_state.rol_actual != "admin":
+        st.markdown("---")
+        st.subheader("Configuración de Perfil")
+        
+        nombre_prev = st.session_state.config_empresa["nombre"]
+        tipo_prev = st.session_state.config_empresa["tipo"]
+        dir_prev = st.session_state.config_empresa["direccion"]
+        nit_prev = st.session_state.config_empresa["nit"]
+        metas_prev = st.session_state.config_empresa["metas"]
+        moneda_prev = st.session_state.config_empresa.get("moneda", "$")
 
-# Inicialización segura e incremental de las bases de datos compartidas
-if "datos_empresa" not in st.session_state:
-    st.session_state.datos_empresa = {}
+        st.session_state.config_empresa["nombre"] = st.text_input("Empresa S.A.:", nombre_prev)
+        st.session_state.config_empresa["tipo"] = st.text_input("Tipo de Comercio:", tipo_prev)
+        st.session_state.config_empresa["direccion"] = st.text_input("Domicilio Fiscal:", dir_prev)
+        st.session_state.config_empresa["nit"] = st.text_input("NIT de la Empresa:", nit_prev)
+        st.session_state.config_empresa["metas"] = st.text_area("Objetivos de Operaciones:", metas_prev)
+        
+        lista_opciones_divisa = ["$", "Q", "€", "MXN", "COP", "CLP", "PEN", "Bs.", "HNL", "NIO", "CRC", "Personalizado"]
+        try:
+            def_idx = lista_opciones_divisa.index(moneda_prev)
+        except ValueError:
+            def_idx = 11
+            
+        moneda_seleccionada = st.selectbox("Moneda / Divisa:", options=lista_opciones_divisa, index=def_idx)
+        if moneda_seleccionada == "Personalizado":
+            st.session_state.config_empresa["moneda"] = st.text_input("Símbolo de tu moneda:", value=moneda_prev if moneda_prev != "Personalizado" else "$")
+        else:
+            st.session_state.config_empresa["moneda"] = moneda_seleccionada
 
-for clave, plantilla_raw in PLANTILLAS_CSV.items():
-    if clave not in st.session_state.datos_empresa:
-        st.session_state.datos_empresa[clave] = pd.read_csv(io.StringIO(plantilla_raw))
+        # Guardar inmediatamente si hay cambios detectados en la barra de configuración
+        if (nombre_prev != st.session_state.config_empresa["nombre"] or 
+            tipo_prev != st.session_state.config_empresa["tipo"] or
+            dir_prev != st.session_state.config_empresa["direccion"] or
+            nit_prev != st.session_state.config_empresa["nit"] or
+            metas_prev != st.session_state.config_empresa["metas"] or
+            moneda_prev != st.session_state.config_empresa["moneda"]):
+            guardar_datos_usuario_actual()
 
-if "tareas" not in st.session_state:
-    st.session_state.tareas = [
-        {"id": 1, "agente": "Financiero", "descripcion": "Verificar conciliación de caja y alertar saldo remanente.", "estado": "Pendiente", "fecha": "2026-06-14"},
-        {"id": 2, "agente": "Inventario", "descripcion": "Identificar productos en stock mínimo para sugerir reordenamiento.", "estado": "Pendiente", "fecha": "2026-06-14"},
-        {"id": 3, "agente": "Impuestos", "descripcion": "Revisar obligaciones de ISR pendientes para el mes entrante.", "estado": "Pendiente", "fecha": "2026-06-14"},
-        {"id": 4, "agente": "Mercadeo", "descripcion": "Diseñar pauta en TikTok Ads para el inventario de baja rotación.", "estado": "Pendiente", "fecha": "2026-06-14"}
-    ]
+    # Botón para cerrar sesión de manera segura
+    st.markdown("---")
+    if st.button("🚪 Cerrar Sesión", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.usuario_actual = ""
+        st.session_state.rol_actual = ""
+        st.rerun()
 
-if "historial_chat" not in st.session_state:
-    st.session_state.historial_chat = [
-        {"rol": "Director General", "mensaje": "Saludos. Soy el Director General de tu empresa. Tengo acceso inmediato al estado financiero, los movimientos de caja, inventarios, impuestos y campañas de mercadeo. ¿Qué directrices deseas ordenar hoy?"}
-    ]
+# Si el administrador entra a una sección de simulación, le creamos datos temporales para evitar roturas
+if st.session_state.rol_actual == "admin" and opcion_menu != "👥 Control del Administrador":
+    if "config_empresa" not in st.session_state:
+        st.session_state.config_empresa = {
+            "nombre": "Administración del Sistema",
+            "tipo": "Soporte",
+            "direccion": "N/A",
+            "nit": "N/A",
+            "metas": "Supervisar la plataforma.",
+            "moneda": "$"
+        }
+        st.session_state.datos_empresa = {
+            "inventario": pd.read_csv(io.StringIO(PLANTILLAS_CSV["inventario"])),
+            "caja": pd.read_csv(io.StringIO(PLANTILLAS_CSV["caja"])),
+            "mercadeo": pd.read_csv(io.StringIO(PLANTILLAS_CSV["mercadeo"])),
+            "impuestos": pd.read_csv(io.StringIO(PLANTILLAS_CSV["impuestos"]))
+        }
+        st.session_state.tareas = []
+        st.session_state.historial_chat = []
 
+# ==========================================
+# VISTA GENERAL: CONTROL DEL ADMINISTRADOR
+# ==========================================
+if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del Administrador":
+    st.header("👥 Consola de Control del Administrador")
+    st.write("Registra, autoriza y supervisa las cuentas de acceso del ecosistema de agentes inteligentes de tu plataforma.")
+
+    col_adm1, col_adm2 = st.columns([1, 1.5])
+    
+    with col_adm1:
+        st.markdown("### ➕ Registrar Nuevo Usuario")
+        with st.form("form_crear_usuario", clear_on_submit=True):
+            nuevo_correo = st.text_input("Asignar Correo Electrónico:", placeholder="correo@empresa.com").strip().lower()
+            nuevo_password = st.text_input("Asignar Contraseña Temporal:", placeholder="Clave de acceso")
+            autorizacion_inicial = st.checkbox("Autorizar acceso inmediatamente", value=True)
+            btn_crear = st.form_submit_button("Crear y Registrar")
+            
+            if btn_crear:
+                if nuevo_correo and nuevo_password:
+                    if nuevo_correo not in db_actual["usuarios"]:
+                        # REGISTRAR NUEVO USUARIO TOTALMENTE EN BLANCO ("Aplicación que es blanca")
+                        db_actual["usuarios"][nuevo_correo] = {
+                            "password": nuevo_password,
+                            "autorizado": autorizacion_inicial,
+                            "rol": "usuario",
+                            "config_empresa": {
+                                "nombre": "Nueva Empresa Limpia",
+                                "tipo": "Sin definir",
+                                "direccion": "Sin definir",
+                                "nit": "Sin definir",
+                                "metas": "Configurar las metas estratégicas de la empresa aquí.",
+                                "moneda": "$"
+                            },
+                            "datos_empresa": {
+                                "inventario": pd.read_csv(io.StringIO(BLANCO_INVENTARIO)).to_dict(orient="records"),
+                                "caja": pd.read_csv(io.StringIO(BLANCO_CAJA)).to_dict(orient="records"),
+                                "mercadeo": pd.read_csv(io.StringIO(BLANCO_MERCADEO)).to_dict(orient="records"),
+                                "impuestos": pd.read_csv(io.StringIO(BLANCO_IMPUESTOS)).to_dict(orient="records")
+                            },
+                            "tareas": [],
+                            "historial_chat": [
+                                {"rol": "Director General", "mensaje": "Saludos. He inicializado tu nuevo entorno empresarial de forma limpia. Tu aplicación está totalmente 'en blanco' y lista para operar. Dirígete a la sección 'Carga y Plantillas CSV' para descargar las plantillas estándar, adaptarlas con tus datos de negocio y subirlas para que comencemos a trabajar coordinadamente."}
+                            ]
+                        }
+                        guardar_db(db_actual)
+                        st.success(f"✅ ¡Usuario `{nuevo_correo}` registrado con éxito! Su aplicación ha sido inicializada limpia ('en blanco').")
+                        st.rerun()
+                    else:
+                        st.error("❌ El correo ingresado ya está registrado en el sistema.")
+                else:
+                    st.warning("Completa todos los campos obligatorios.")
+
+    with col_adm2:
+        st.markdown("### 📋 Listado y Autorización de Usuarios")
+        st.write("Modifica el estado de autorización para suspender o permitir el inicio de sesión.")
+        
+        usuarios_listados = list(db_actual["usuarios"].keys())
+        
+        for usr_mail in usuarios_listados:
+            # No permitir que el admin se desautorice o elimine a sí mismo
+            if usr_mail == "admin@empresa.com":
+                continue
+                
+            datos_usr = db_actual["usuarios"][usr_mail]
+            rol_usr = datos_usr.get("rol", "usuario")
+            estado_aut = datos_usr.get("autorizado", False)
+            
+            with st.container():
+                st.markdown(f"**Usuario:** `{usr_mail}` | **Rol:** `{rol_usr}`")
+                col_btn_aut, col_btn_del = st.columns([2, 1])
+                
+                with col_btn_aut:
+                    # Switch para cambiar autorización
+                    nuevo_estado = st.toggle("Autorizado para entrar", value=estado_aut, key=f"tog_{usr_mail}")
+                    if nuevo_estado != estado_aut:
+                        db_actual["usuarios"][usr_mail]["autorizado"] = nuevo_estado
+                        guardar_db(db_actual)
+                        st.success(f"Estado de `{usr_mail}` actualizado.")
+                        st.rerun()
+                        
+                with col_btn_del:
+                    if st.button("🗑️ Eliminar", key=f"del_{usr_mail}", type="secondary", use_container_width=True):
+                        del db_actual["usuarios"][usr_mail]
+                        guardar_db(db_actual)
+                        st.warning(f"Usuario `{usr_mail}` eliminado del sistema.")
+                        st.rerun()
+            st.markdown("---")
+
+# ==========================================
+# CONECTOR DE LLM (OPENROUTER)
+# ==========================================
 def consultar_openrouter(prompt_sistema, prompt_usuario):
     if not st.session_state.api_key:
         return "⚠️ Error: No se ha configurado la API Key de OpenRouter. Ingresa tu clave en los secretos de Streamlit o utilízala desde el menú lateral para activar los agentes."
@@ -167,6 +488,9 @@ def consultar_openrouter(prompt_sistema, prompt_usuario):
     except Exception as e:
         return f"Error de conectividad de red con OpenRouter: {str(e)}"
 
+# ==========================================
+# CONTEXTOS Y PROMPTS PARA LOS AGENTES
+# ==========================================
 def construir_contexto_empresa():
     config = st.session_state.config_empresa
     inv = st.session_state.datos_empresa["inventario"].to_string()
@@ -200,6 +524,9 @@ def construir_contexto_empresa():
 
     [REGISTRO DE TAREAS DIARIAS EN CURSO]
     {tareas}
+    
+    NOTA MUY IMPORTANTE DE CONTROL (APLICACIÓN EN BLANCO):
+    Si las tablas de inventario, caja, mercadeo e impuestos están vacías (sólo tienen las cabeceras), significa que el usuario es nuevo y su aplicación está en blanco. Dile amablemente que para dar un diagnóstico preciso debe subir sus archivos CSV utilizando el menú de descarga/carga de plantillas. Ofrécete a guiarlo en el proceso y haz recomendaciones teóricas basadas en su Tipo de Negocio e ID de metas.
     """
     return contexto
 
@@ -208,23 +535,23 @@ def obtener_prompt_agente(rol):
     moneda = st.session_state.config_empresa.get("moneda", "$")
     
     prompts = {
-        "Director General": f"""Eres el Agente Director General (CEO) de la empresa. Tu deber primordial es liderar y coordinar a tus agentes especialistas (Financiero, Inventario, Impuestos y Mercadeo). Tienes una visión global del negocio. Tu tono es profesional, analítico y altamente estratégico. Al responder, evalúa los datos históricos de todas las áreas, señala ineficiencias (por ejemplo: baja rotación en inventarios, impuestos de alto impacto, fugas de dinero en caja o campañas con baja conversión) y explica cómo tus subordinados se van a coordinar para resolverlo de inmediato.
+        "Director General": f"""Eres el Agente Director General (CEO) de la empresa. Tu deber primordial es liderar y coordinar a tus agentes especialistas (Financiero, Inventario, Impuestos y Mercadeo). Tienes una visión global del negocio. Tu tono es profesional, analítico y altamente estratégico. Al responder, evalúa los datos históricos de todas las áreas, señala ineficiencias y explica cómo tus subordinados se van a coordinar para resolverlo de inmediato.
         IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
-        "Financiero": f"""Eres el Agente Financiero de la empresa. Te encargas de custodiar el dinero de la caja, evaluar márgenes de utilidad de los productos vendidos y vigilar el presupuesto disponible. Debes alertar al CEO si el flujo de caja operativo es deficiente para cubrir las obligaciones de nómina, impuestos o inversiones publicitarias de Mercadeo. Trabaja en sintonía con Inventario para evaluar compras lógicas y con Impuestos para asegurar provisiones.
+        "Financiero": f"""Eres el Agente Financiero de la empresa. Te encargas de custodiar el dinero de la caja, evaluar márgenes de utilidad de los productos vendidos y vigilar el presupuesto disponible. Debes alertar al CEO si el flujo de caja operativo es deficiente para cubrir las obligaciones de deudas, impuestos o inversiones publicitarias de Mercadeo. Trabaja en sintonía con Inventario para evaluar compras lógicas y con Impuestos para asegurar provisiones fiscales.
         IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
-        "Inventario": f"""Eres el Agente de Inventario. Gestionas el stock de productos, vigilas las mermas, controlas las rotaciones (Alta, Media, Baja) y configuras alertas de stock crítico frente a valores mínimos de seguridad. Trabajas en conjunto con el Financiero para autorizar nuevas compras basadas en liquidez y con el Agente de Mercadeo para armar ofertas sobre productos con rotación 'Baja'.
+        "Inventario": f"""Eres el Agente de Inventario. Gestionas el stock de productos, vigilas las mermas, controlas las rotaciones (Alta, Media, Baja) y configuras alertas de stock crítico frente a valores mínimos de seguridad. Trabajas en conjunto con el Financiero para autorizar nuevas compras basadas en liquidez y con el Agente de Mercadeo para armar ofertas sobre productos de baja rotación.
         IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
-        "Impuestos": f"""Eres el Agente de Impuestos y Control Fiscal. Eres responsable de que la empresa se encuentre al día con el fisco, previendo pagos de IVA, ISR y retenciones de manera oportuna. Debes alertar al Financiero sobre los montos que deben estar resguardados en caja para el pago de impuestos pendientes para evitar multas penales u operativas.
+        "Impuestos": f"""Eres el Agente de Impuestos y Control Fiscal. Eres responsable de que la empresa se encuentre al día con el fisco, previendo pagos de IVA, ISR y retenciones de manera oportuna. Debes alertar al Financiero sobre los montos que deben estar resguardados en caja para el pago de tributos pendientes para evitar multas operativas.
         IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}""",
         
-        "Mercadeo": f"""Eres el Agente de Mercadeo. Tu foco es maximizar la visibilidad de la marca, generar leads calificados y optimizar la tasa de conversión de las campañas de publicidad. Debes utilizar los datos del Agente de Inventario para saber qué productos necesitan pauta urgente (baja rotación) y reportar al Financiero el Retorno de Inversión publicitaria (ROI) para solicitar presupuesto adicional.
+        "Mercadeo": f"""Eres el Agente de Mercadeo. Tu foco es maximizar la visibilidad del negocio, atraer clientes calificados, y optimizar la tasa de conversión de las campañas de publicidad. Debes utilizar los datos del Agente de Inventario para saber qué productos necesitan pauta de urgencia (baja rotación) y reportar al Financiero el Retorno de Inversión publicitaria (ROI) para solicitar presupuesto adicional.
         IMPORTANTE: Toda cifra de dinero que menciones o presupuestes DEBE estar obligatoriamente expresada usando la moneda oficial seleccionada por el usuario: {moneda}.
         {contexto}"""
     }
@@ -242,58 +569,9 @@ def extraer_json_de_respuesta(texto_crudo):
     except Exception as e:
         raise ValueError(f"Fallo de codificación JSON: {str(e)}")
 
-with st.sidebar:
-    st.header("🔑 Acceso y Perfil")
-    
-    st.session_state.api_key = st.text_input(
-        "OpenRouter API Key:", 
-        value=st.session_state.api_key, 
-        type="password",
-        help="Si no la has ingresado en los secretos de Streamlit (OPENROUTER_API_KEY), puedes pegarla aquí."
-    )
-    
-    st.markdown("---")
-    st.header("📌 Navegación")
-    opcion_menu = st.radio("Secciones de Trabajo:", [
-        "Dashboard General", 
-        "Carga y Plantillas CSV", 
-        "Asignación de Tareas", 
-        "Chatbot con Agentes", 
-        "Datos del Pizarrón"
-    ])
-    
-    st.markdown("---")
-    st.subheader("Configuración Fiscal y Perfil")
-    st.session_state.config_empresa["nombre"] = st.text_input("Empresa S.A.:", st.session_state.config_empresa["nombre"])
-    st.session_state.config_empresa["tipo"] = st.text_input("Tipo de Comercio:", st.session_state.config_empresa["tipo"])
-    st.session_state.config_empresa["direccion"] = st.text_input("Domicilio Fiscal:", st.session_state.config_empresa["direccion"])
-    st.session_state.config_empresa["nit"] = st.text_input("NIT de la Empresa:", st.session_state.config_empresa["nit"])
-    st.session_state.config_empresa["metas"] = st.text_area("Objetivos de Operaciones:", st.session_state.config_empresa["metas"])
-    
-    # Selector de Divisas Corporativas
-    moneda_actual = st.session_state.config_empresa.get("moneda", "$")
-    lista_opciones_divisa = ["$", "Q", "€", "MXN", "COP", "CLP", "PEN", "Bs.", "HNL", "NIO", "CRC", "Personalizado"]
-    
-    try:
-        def_idx = lista_opciones_divisa.index(moneda_actual)
-    except ValueError:
-        def_idx = 11  # Indice para "Personalizado" si no está en la lista común
-        
-    moneda_seleccionada = st.selectbox(
-        "Moneda / Divisa:",
-        options=lista_opciones_divisa,
-        index=def_idx,
-        help="Elige el símbolo o divisa predeterminado para tus reportes e informes de agentes."
-    )
-    
-    if moneda_seleccionada == "Personalizado":
-        st.session_state.config_empresa["moneda"] = st.text_input(
-            "Especifica el símbolo de tu moneda:", 
-            value=moneda_actual if moneda_actual != "Personalizado" else "$"
-        )
-    else:
-        st.session_state.config_empresa["moneda"] = moneda_seleccionada
-
+# ==========================================
+# SECCIÓN: DASHBOARD GENERAL
+# ==========================================
 if opcion_menu == "Dashboard General":
     st.header("📈 Informe del Agente Director General")
     st.write("Análisis general de la empresa recopilado de forma cruzada por los agentes a cargo de los datos.")
@@ -306,7 +584,7 @@ if opcion_menu == "Dashboard General":
         df_mkt = st.session_state.datos_empresa["mercadeo"]
         df_imp = st.session_state.datos_empresa["impuestos"]
         
-        val_inv = (df_inv["Cantidad"] * df_inv["Costo_Unitario"]).sum()
+        val_inv = (df_inv["Cantidad"] * df_inv["Costo_Unitario"]).sum() if not df_inv.empty else 0.0
         caja_act = df_caj["Saldo_Acumulado"].iloc[-1] if not df_caj.empty else 0.0
         leads_tot = df_mkt["Leads_Generados"].sum() if not df_mkt.empty else 0
         imp_pend = df_imp[df_imp["Estado_Pago"] == "Pendiente"]["Monto_Determinado"].sum() if not df_imp.empty else 0.0
@@ -337,10 +615,15 @@ if opcion_menu == "Dashboard General":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Detección de aplicación vacía ("en blanco")
+    es_vacia = (df_inv.empty and df_caj.empty and df_mkt.empty and df_imp.empty)
+    if es_vacia:
+        st.warning("ℹ️ **Tu aplicación se encuentra actualmente 'en blanco'**. Sube archivos de ejemplo de tu negocio en la pestaña de carga de CSV para que los agentes cuenten con información real sobre la cual operar.")
+
     if st.button("🔄 Generar Informe de Auditoría Operativa con el Director General"):
         with st.spinner("El CEO está llamando a los jefes de departamento y leyendo los libros de control corporativo..."):
             prompt_sys = obtener_prompt_agente("Director General")
-            prompt_user = f"Analiza detalladamente los números que tenemos en inventario, balances de caja, rendimiento de publicidad y obligaciones tributarias pendientes. Reporta de forma ejecutiva un diagnóstico crítico de la situación. Recuerda usar siempre la moneda '{moneda}' en tu respuesta."
+            prompt_user = f"Analiza detalladamente los números que tenemos en inventario, balances de caja, rendimiento de publicidad y obligaciones tributarias. Reporta de forma ejecutiva un diagnóstico crítico de la situación. Recuerda usar siempre la moneda '{moneda}' en tu respuesta."
             informe = consultar_openrouter(prompt_sys, prompt_user)
             st.session_state.ultimo_informe = informe
             st.rerun()
@@ -351,9 +634,12 @@ if opcion_menu == "Dashboard General":
     else:
         st.info("Para recibir un diagnóstico de tus operaciones y cómo interactúan las metas con tus datos reales, haz clic en el botón superior.")
 
+# ==========================================
+# SECCIÓN: CARGA Y PLANTILLAS CSV
+# ==========================================
 elif opcion_menu == "Carga y Plantillas CSV":
     st.header("📥 Descarga de Plantillas y Carga de Archivos")
-    st.write("Para que los agentes inteligentes tomen decisiones, puedes descargar nuestras plantillas estándar, editarlas con tus datos corporativos reales y subirlas nuevamente.")
+    st.write("Para que los agentes inteligentes tomen decisiones, puedes descargar nuestras plantillas estándar, editarlas con tus datos corporativos reales de tu empresa y subirlas nuevamente.")
     
     st.markdown("---")
     st.subheader("1. Descarga de Plantillas Oficiales")
@@ -402,6 +688,7 @@ elif opcion_menu == "Carga y Plantillas CSV":
             try:
                 st.session_state.datos_empresa["inventario"] = pd.read_csv(f_inv)
                 st.success("✅ Archivo de Inventario actualizado con éxito.")
+                guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
                 
@@ -410,6 +697,7 @@ elif opcion_menu == "Carga y Plantillas CSV":
             try:
                 st.session_state.datos_empresa["caja"] = pd.read_csv(f_caj)
                 st.success("✅ Archivo de Caja y Movimientos actualizado con éxito.")
+                guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
 
@@ -419,6 +707,7 @@ elif opcion_menu == "Carga y Plantillas CSV":
             try:
                 st.session_state.datos_empresa["mercadeo"] = pd.read_csv(f_mkt)
                 st.success("✅ Archivo de Campañas de Mercadeo actualizado con éxito.")
+                guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
                 
@@ -427,9 +716,13 @@ elif opcion_menu == "Carga y Plantillas CSV":
             try:
                 st.session_state.datos_empresa["impuestos"] = pd.read_csv(f_imp)
                 st.success("✅ Archivo de Obligaciones de Impuestos actualizado con éxito.")
+                guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
 
+# ==========================================
+# SECCIÓN: ASIGNACIÓN DE TAREAS
+# ==========================================
 elif opcion_menu == "Asignación de Tareas":
     st.header("📋 Tablero de Distribución y Asignación de Tareas")
     st.write("Administra el cronograma operativo de tus agentes utilizando cualquiera de los tres modos de asignación.")
@@ -442,14 +735,14 @@ elif opcion_menu == "Asignación de Tareas":
     if st.button("🚀 Iniciar Generación en Piloto Automático"):
         with st.spinner("El CEO está examinando las tablas compartidas de impuestos pendientes, rotaciones y dinero disponible..."):
             prompt_sys = obtener_prompt_agente("Director General")
-            prompt_user = f"""Evalúa exhaustivamente el estado corporativo y genera un plan de 4 tareas de alta prioridad para hoy (una para cada especialista: Financiero, Inventario, Impuestos, Mercadeo).
+            prompt_user = f"""Evalúa el estado corporativo y genera un plan de 4 tareas de alta prioridad para hoy (una para cada especialista: Financiero, Inventario, Impuestos, Mercadeo).
             Debes retornar ÚNICAMENTE un arreglo con formato JSON estricto, sin explicaciones previas ni finales. 
             IMPORTANTE: Si mencionas montos o presupuestos en las tareas, utiliza obligatoriamente la divisa oficial definida: {moneda}.
             [
               {{"agente": "Financiero", "descripcion": "Tarea específica basada en saldo actual o egresos"}},
               {{"agente": "Inventario", "descripcion": "Tarea para mitigar productos de rotacion baja o stock critico"}},
               {{"agente": "Impuestos", "descripcion": "Misión para calcular o liquidar obligaciones próximas al vencimiento"}},
-              {{"agente": "Mercadeo", "descripcion": "Estrategia puntual de venta basada en productos excedentes"}}
+              {{"agente": "Mercadeo", "descripcion": "Estrategia de campaña comercial sobre excedentes de herramientas o stock"}}
             ]"""
             
             respuesta = consultar_openrouter(prompt_sys, prompt_user)
@@ -465,6 +758,7 @@ elif opcion_menu == "Asignación de Tareas":
                         "fecha": str(datetime.date.today())
                     })
                 st.success("🎯 Las tareas estratégicas del día han sido redactadas y enviadas al pizarrón general por el CEO.")
+                guardar_datos_usuario_actual()
                 st.rerun()
             except Exception as e:
                 st.error("No se pudo estructurar el JSON operativo de forma directa. Inténtalo de nuevo.")
@@ -493,6 +787,7 @@ elif opcion_menu == "Asignación de Tareas":
                         "fecha": str(datetime.date.today())
                     })
                     st.success(f"Asignación directa enviada a {agente_target}.")
+                    guardar_datos_usuario_actual()
                     st.rerun()
                 else:
                     st.warning("Escribe una descripción de objetivos.")
@@ -500,7 +795,7 @@ elif opcion_menu == "Asignación de Tareas":
     with col_m2:
         st.markdown("#### 🗣️ Modo 2: Dictado Centralizado a Gerencia")
         with st.form("form_creacion_centralizada", clear_on_submit=True):
-            orden_general = st.text_area("Orden global o problema genérico:", placeholder="Ej: Se aproxima la declaración de IVA e ISR, y necesitamos liquidez.")
+            orden_general = st.text_area("Orden global o problema genérico:", placeholder="Ej: Se aproxima la compra de stock de mercadería y necesitamos prever los saldos.")
             submit_cen = st.form_submit_button("Asignar por Canal CEO")
             
             if submit_cen:
@@ -508,7 +803,7 @@ elif opcion_menu == "Asignación de Tareas":
                     with st.spinner("El CEO está reuniendo a los departamentos para coordinar la estrategia..."):
                         prompt_sys = obtener_prompt_agente("Director General")
                         prompt_user = f"""El usuario ha dictado la siguiente orden general: "{orden_general}".
-                        Desglosa esta orden en tareas específicas para cada uno de los especialistas involucrados en resolverlo.
+                        Desglosa esta orden en tareas específicas para cada uno de los especialistas involucrados.
                         Retorna la respuesta estrictamente estructurada en formato JSON, sin textos adicionales:
                         [
                           {{"agente": "Nombre del agente", "descripcion": "Detalle de la tarea coordinada"}}
@@ -527,6 +822,7 @@ elif opcion_menu == "Asignación de Tareas":
                                     "fecha": str(datetime.date.today())
                                 })
                             st.success("La Gerencia General ha finalizado la coordinación e inyectado las tareas resultantes.")
+                            guardar_datos_usuario_actual()
                             st.rerun()
                         except Exception:
                             st.error("No se pudo interpretar el formato JSON del modelo. Reintenta la asignación.")
@@ -557,12 +853,16 @@ elif opcion_menu == "Asignación de Tareas":
                         break
                 if encontrada:
                     st.success(f"La tarea #{id_modificar} ha cambiado de estado a '{estado_nuevo}'.")
+                    guardar_datos_usuario_actual()
                     st.rerun()
                 else:
                     st.error(f"La tarea con el identificador #{id_modificar} no existe.")
     else:
         st.info("No hay asignaciones cargadas para el día de hoy.")
 
+# ==========================================
+# SECCIÓN: CHATBOT CON AGENTES
+# ==========================================
 elif opcion_menu == "Chatbot con Agentes":
     st.header("💬 Sala de Reuniones Ejecutiva (Chatbot)")
     st.write("Habla de manera interactiva con tus agentes especialistas. Cada agente conoce la base de datos compartida y cooperará para ayudarte a cumplir tus metas estratégicas.")
@@ -588,8 +888,12 @@ elif opcion_menu == "Chatbot con Agentes":
             
             respuesta_agente = consultar_openrouter(prompt_sys, prompt_completo)
             st.session_state.historial_chat.append({"rol": interlocutor_activo, "mensaje": respuesta_agente})
+            guardar_datos_usuario_actual()
         st.rerun()
 
+# ==========================================
+# SECCIÓN: DATOS DEL PIZARRÓN
+# ==========================================
 elif opcion_menu == "Datos del Pizarrón":
     st.header("💾 Registro de Libros de Datos")
     st.write("Esta sección muestra las bases de datos de solo lectura compartidas. Los agentes corporativos consultan estos registros al instante para emitir dictámenes coherentes.")
