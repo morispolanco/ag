@@ -68,62 +68,62 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# CONSTANTES Y PLANTILLAS DE DATOS
+# CONSTANTES Y PLANTILLAS DE DATOS DE GRAN FERRETERÍA
 # ==========================================
 DB_FILE = "db.json"
 
 PLANTILLAS_CSV = {
     "inventario": (
         "ID_Producto,Producto,Categoria,Cantidad,Costo_Unitario,Precio_Venta,Rotacion,Stock_Minimo\n"
-        "FERR001,Rotomartillo Industrial 800W DeWalt,Herramientas Eléctricas,18,120.00,195.00,Alta,5\n"
-        "FERR002,Pintura Impermeabilizante Galón Corona,Pinturas,45,22.00,38.50,Alta,10\n"
-        "FERR003,Saco de Cemento Gris Portland 50kg,Construcción,250,5.50,7.20,Alta,50\n"
-        "FERR004,Juego de Destornilladores 10 pzs Stanley,Herramientas Manuales,12,14.00,24.99,Media,5\n"
-        "FERR005,Tubo PVC de Presión 1/2 pulgada,Plomería,150,1.20,2.10,Media,30\n"
-        "FERR006,Caja de Clavos de Acero 2 pulgadas,Fijaciones,8,6.50,11.00,Baja,10\n"
-        "FERR007,Cortadora de Metales 14 DeWalt,Herramientas Eléctricas,8,185.00,299.00,Media,3\n"
-        "FERR008,Varilla de Hierro Corrugado 3/8,Construcción,500,2.10,3.50,Alta,100\n"
-        "FERR009,Generador Eléctrico Portátil 3500W,Maquinaria,5,320.00,550.00,Baja,2\n"
-        "FERR010,Cerradura de Sobreponer Standard Yale,Cerrajería,35,11.50,19.90,Alta,8\n"
-        "FERR011,Escalera de Aluminio Extensible 24 peldaños,Equipamiento,10,85.00,149.00,Media,3\n"
-        "FERR012,Lámina de Zinc Acanalada 3x10 pies,Construcción,120,8.50,14.00,Alta,25\n"
-        "FERR013,Cable Eléctrico THHN N12 (Rollo 100m),Electricidad,40,28.00,45.00,Alta,10\n"
-        "FERR014,Pistola de Calor Profesional 2000W Bosch,Herramientas Eléctricas,15,45.00,79.00,Media,4\n"
-        "FERR015,Lana de Vidrio Aislante (Rollo),Construcción,14,35.00,60.00,Baja,5"
+        "FERR001,Rotomartillo Industrial DeWalt 20V Max,Herramientas Eléctricas,35,189.90,279.99,Alta,8\n"
+        "FERR002,Pintura Impermeabilizante Corona Ultra 5 Galones,Pinturas,85,65.00,110.00,Alta,15\n"
+        "FERR003,Cemento Portland Gris ASTM C-150 (Saco 50kg),Construcción,1200,6.20,8.50,Alta,200\n"
+        "FERR004,Juego Llaves de Impacto Stanley FatMax 24 pzs,Herramientas Manuales,25,45.00,79.99,Media,6\n"
+        "FERR005,Tubo Cobre Tipo M 1/2 pulgada x 6m,Fontanería,300,14.50,22.00,Media,50\n"
+        "FERR006,Caja Clavos de Acero Corrugado 3pulg (20kg),Fijaciones,40,28.00,45.00,Baja,10\n"
+        "FERR007,Planta de Soldar Inverter Lincoln Electric 250A,Maquinaria,12,380.00,599.00,Media,3\n"
+        "FERR008,Varilla de Acero Grado 40 3/8pulg x 6m,Construcción,2500,2.90,4.25,Alta,500\n"
+        "FERR009,Generador Eléctrico Trifásico Honda 6500W,Maquinaria,6,850.00,1350.00,Baja,2\n"
+        "FERR010,Cerradura Digital Inteligente Yale Real Living,Cerrajería,45,115.00,189.00,Alta,10\n"
+        "FERR011,Escalera de Aluminio Extensible Tipo IA 28 pies,Equipamiento,15,145.00,229.00,Media,4\n"
+        "FERR012,Lámina de Zinc Acanalada Calibre 26 3.66m,Construcción,800,11.20,16.50,Alta,150\n"
+        "FERR013,Cable Eléctrico Cobre THHN 10 AWG (Rollo 100m),Electricidad,60,55.00,89.00,Alta,12\n"
+        "FERR014,Compresor de Aire Evans 3HP 100L,Maquinaria,8,290.00,450.00,Media,3\n"
+        "FERR015,Casco de Seguridad de Fibra de Vidrio MSA,Seguridad Industrial,150,12.50,22.00,Alta,30"
     ),
     "caja": (
         "Fecha,Concepto,Categoria,Ingreso,Egreso,Saldo_Acumulado,Metodo_Pago\n"
-        "2026-06-10,Saldo inicial de caja y bancos,Apertura,12000.00,0.00,12000.00,Transferencia\n"
-        "2026-06-11,Venta de materials a Constructora Alfa,Ventas,4500.00,0.00,16500.00,Transferencia\n"
-        "2026-06-12,Flete de entrega de cemento,Logística,0.00,320.00,16180.00,Cheque\n"
-        "2026-06-13,Compra de stock de herramientas Stanley,Inventario,0.00,1500.00,14680.00,Transferencia\n"
-        "2026-06-14,Venta de 3 Rotomartillos DeWalt,Ventas,585.00,0.00,15265.00,Tarjeta\n"
-        "2026-06-14,Pauta publicitaria Campaña Lluvias,Mercadeo,0.00,250.00,15015.00,Tarjeta\n"
-        "2026-06-15,Venta mostrador herramientas manuales,Ventas,920.00,0.00,15935.00,Efectivo\n"
-        "2026-06-15,Pago de factura distribuidora de hierro,Inventario,0.00,2100.00,13835.00,Transferencia\n"
-        "2026-06-16,Venta de cemento y hierro a Constructora Beta,Ventas,3400.00,0.00,17235.00,Transferencia\n"
-        "2026-06-16,Pago de planilla de operarios quincenal,Planilla,0.00,1800.00,15435.00,Transferencia\n"
-        "2026-06-17,Pago servicio de agua y telefonía,Servicios,0.00,120.00,15315.00,Debito\n"
-        "2026-06-17,Venta mostrador plomería y electricidad,Ventas,1150.00,0.00,16465.00,Efectivo"
+        "2026-06-10,Saldo inicial operativo en Bancos,Apertura,45000.00,0.00,45000.00,Transferencia\n"
+        "2026-06-11,Despacho materiales pesados Constructora del Norte,Ventas,18500.00,0.00,63500.00,Transferencia\n"
+        "2026-06-12,Pago flete y fletamiento logístico cementera,Logística,0.00,1250.00,62250.00,Cheque\n"
+        "2026-06-13,Compra inventario herramientas DeWalt y Stanley,Inventario,0.00,8500.00,53750.00,Transferencia\n"
+        "2026-06-14,Venta mostrador flotilla de taladros industriales,Ventas,3250.00,0.00,57000.00,Tarjeta\n"
+        "2026-06-14,Gasto de campaña publicitaria temporada de lluvias,Mercadeo,0.00,850.00,56150.00,Tarjeta\n"
+        "2026-06-15,Cobro factura crédito Corporación Inmobiliaria Beta,Ventas,14200.00,0.00,70350.00,Transferencia\n"
+        "2026-06-15,Pago importación de soldadoras Lincoln Electric,Inventario,0.00,4560.00,65790.00,Transferencia\n"
+        "2026-06-16,Adquisición de equipo de seguridad industrial MSA,Inventario,0.00,1875.00,63915.00,Transferencia\n"
+        "2026-06-16,Nómina quincenal personal operativo y asesores,Planilla,0.00,6500.00,57415.00,Transferencia\n"
+        "2026-06-17,Pago de servicios generales (Luz trifásica, Internet),Servicios,0.00,480.00,56935.00,Debito\n"
+        "2026-06-17,Ventas del día canal mostrador minorista,Ventas,4890.00,0.00,61825.00,Efectivo"
     ),
     "mercadeo": (
         "ID_Campana,Campana,Canal,Presupuesto_Asignado,Gasto_Actual,Leads_Generados,Conversiones,Estado\n"
-        "CAMP001,Evita Goteras (Impermeabilizantes),Meta Ads,300.00,280.00,320,42,Activa\n"
-        "CAMP002,Constructores Aliados (Descuento),Email Marketing,100.00,85.00,140,24,Activa\n"
-        "CAMP003,Feria del Desarmador Stanley,Google Ads,150.00,150.00,98,12,Completada\n"
-        "CAMP004,Remate de Lámparas de Exterior,TikTok Ads,120.00,45.00,110,6,Pausada\n"
-        "CAMP005,Equipamiento Eléctrico DeWalt,Google Ads,400.00,120.00,180,15,Activa\n"
-        "CAMP006,Descuento Acero de Refuerzo,WhatsApp Business,50.00,25.00,310,48,Activa\n"
-        "CAMP007,Pinturas de Exterior Temporada Alta,Meta Ads,250.00,250.00,195,18,Completada"
+        "CAMP001,Temporada sin Filtraciones (Impermeabilizantes),Meta Ads,1200.00,980.00,850,115,Activa\n"
+        "CAMP002,Descuento Mayorista para Contratistas,Email Marketing,300.00,240.00,420,85,Activa\n"
+        "CAMP003,Expo-Herramientas Stanley FatMax,Google Ads,600.00,600.00,340,48,Completada\n"
+        "CAMP004,Seguridad Industrial Primero (MSA),TikTok Ads,500.00,250.00,290,22,Activa\n"
+        "CAMP005,Maquinaria Lincoln Electric Profesional,Google Ads,1500.00,1100.00,480,35,Activa\n"
+        "CAMP006,Descuento Estructural Acero y Cemento,WhatsApp Business,150.00,120.00,950,142,Activa\n"
+        "CAMP007,Pinturas Exterior de Alto Tránsito,Meta Ads,800.00,800.00,410,54,Completada"
     ),
     "impuestos": (
         "Periodo,Impuesto,Base_Imponible,Tasa,Monto_Determinado,Estado_Pago,Fecha_Vencimiento\n"
-        "2026-05,IVA General Mensual Ferretería,35000.00,0.12,4200.00,Presentado,2026-06-30\n"
-        "2026-05,Retención ISR de Constructores,12500.00,0.05,625.00,Presentado,2026-06-28\n"
-        "2026-05,Impuesto Sobre la Renta Mensual,45000.00,0.07,3150.00,Pendiente,2026-07-15\n"
-        "2026-06,Previsión IVA del Mes Corriente,18500.00,0.12,2220.00,Pendiente,2026-07-31\n"
-        "2026-06,ISR Retenciones por Salarios,8000.00,0.05,400.00,Pendiente,2026-07-10\n"
-        "2026-05,Impuesto Único Sobre Inmuebles (IUSI),15000.00,0.009,135.00,Presentado,2026-06-30"
+        "2026-05,IVA General Mensual Ferretería Grande,145000.00,0.12,17400.00,Presentado,2026-06-30\n"
+        "2026-05,Retenciones ISR de Clientes Constructores,55000.00,0.05,2750.00,Presentado,2026-06-28\n"
+        "2026-05,Impuesto Sobre la Renta (ISR) Corporativo,120000.00,0.07,8400.00,Pendiente,2026-07-15\n"
+        "2026-06,Provisión Mensual IVA Estimado,65000.00,0.12,7800.00,Pendiente,2026-07-31\n"
+        "2026-06,ISR Retenciones por Planilla Laboral,28000.00,0.05,1400.00,Pendiente,2026-07-10\n"
+        "2026-05,Impuesto de Operación y Licencia Comercial,45000.00,0.015,675.00,Presentado,2026-06-30"
     )
 }
 
@@ -136,6 +136,35 @@ BLANCO_IMPUESTOS = "Periodo,Impuesto,Base_Imponible,Tasa,Monto_Determinado,Estad
 # MANEJO DE BASE DE DATOS (JSON PERSISTENTE)
 # ==========================================
 def cargar_db():
+    default_demo_data = {
+        "password": "demo123",
+        "autorizado": True,
+        "rol": "usuario",
+        "config_empresa": {
+            "nombre": "Ferretería Industrial El Tornillo Gigante, S.A.",
+            "tipo": "Ferretería Industrial, Mayorista y Materiales de Construcción Pesada",
+            "direccion": "Calzada Aguilar Batres 34-10, Zona 11, Ciudad de Guatemala",
+            "nit": "9876543-2",
+            "metas": "Maximizar la rotación de materiales pesados (cemento, varilla de acero), optimizar el inventario de herramientas de alto valor (soldadoras Lincoln, rotomartillos DeWalt) y proyectar el flujo de caja para cumplir con las obligaciones tributarias de gran escala.",
+            "moneda": "Q"
+        },
+        "datos_empresa": {
+            "inventario": pd.read_csv(io.StringIO(PLANTILLAS_CSV["inventario"])).to_dict(orient="records"),
+            "caja": pd.read_csv(io.StringIO(PLANTILLAS_CSV["caja"])).to_dict(orient="records"),
+            "mercadeo": pd.read_csv(io.StringIO(PLANTILLAS_CSV["mercadeo"])).to_dict(orient="records"),
+            "impuestos": pd.read_csv(io.StringIO(PLANTILLAS_CSV["impuestos"])).to_dict(orient="records")
+        },
+        "tareas": [
+            {"id": 1, "agente": "Financiero", "descripcion": "Validar liquidez en Bancos para cubrir la importación de soldadoras Lincoln Electric.", "estado": "Pendiente", "fecha": "2026-06-14"},
+            {"id": 2, "agente": "Inventario", "descripcion": "Supervisar stock de Cemento Portland ASTM C-150 (sugerir reorden si baja de 200 sacos).", "estado": "Pendiente", "fecha": "2026-06-14"},
+            {"id": 3, "agente": "Impuestos", "descripcion": "Liquidar el ISR Corporativo de Mayo antes del vencimiento oficial del 15 de julio.", "estado": "Pendiente", "fecha": "2026-06-14"},
+            {"id": 4, "agente": "Mercadeo", "descripcion": "Monitorear la efectividad y leads de la campaña de Impermeabilizantes en Meta Ads.", "estado": "Pendiente", "fecha": "2026-06-14"}
+        ],
+        "historial_chat": [
+            {"rol": "Director General", "mensaje": "Saludos del Director General de Ferretería Industrial El Tornillo Gigante, S.A. He verificado nuestro pizarrón central y poseo visibilidad completa de nuestro inventario mayorista, balances de flujo en bancos, obligaciones impositivas y presupuestos publicitarios. ¿Qué estrategias operativas coordinaremos el día de hoy?"}
+        ]
+    }
+
     if not os.path.exists(DB_FILE):
         db = {
             "usuarios": {
@@ -144,43 +173,31 @@ def cargar_db():
                     "autorizado": True,
                     "rol": "admin"
                 },
-                "demo@ferreteria.com": {
-                    "password": "demo123",
-                    "autorizado": True,
-                    "rol": "usuario",
-                    "config_empresa": {
-                        "nombre": "Ferretería El Tornillo Gigante, S.A.",
-                        "tipo": "Ferretería Industrial y Materiales de Construcción",
-                        "direccion": "Calzada Aguilar Batres 34-10, Zona 11, Guatemala",
-                        "nit": "9876543-2",
-                        "metas": "Optimizar el stock de materiales pesados (cemento, hierro), liquidar el excedente de pintura impermeabilizante antes de que terminen las lluvias, y resguardar la caja para la provisión fiscal de fin de mes.",
-                        "moneda": "$"
-                    },
-                    "datos_empresa": {
-                        "inventario": pd.read_csv(io.StringIO(PLANTILLAS_CSV["inventario"])).to_dict(orient="records"),
-                        "caja": pd.read_csv(io.StringIO(PLANTILLAS_CSV["caja"])).to_dict(orient="records"),
-                        "mercadeo": pd.read_csv(io.StringIO(PLANTILLAS_CSV["mercadeo"])).to_dict(orient="records"),
-                        "impuestos": pd.read_csv(io.StringIO(PLANTILLAS_CSV["impuestos"])).to_dict(orient="records")
-                    },
-                    "tareas": [
-                        {"id": 1, "agente": "Financiero", "descripcion": "Validar liquidez disponible en caja para cubrir el pedido masivo de cemento Portland.", "estado": "Pendiente", "fecha": "2026-06-14"},
-                        {"id": 2, "agente": "Inventario", "descripcion": "Monitorear el stock de Cemento Portland (stock mínimo de seguridad: 50 sacos).", "estado": "Pendiente", "fecha": "2026-06-14"},
-                        {"id": 3, "agente": "Impuestos", "descripcion": "Prever el pago del Impuesto Sobre la Renta (ISR) Mensual del período de mayo.", "estado": "Pendiente", "fecha": "2026-06-14"},
-                        {"id": 4, "agente": "Mercadeo", "descripcion": "Impulsar las conversiones de la campaña 'Evita Goteras' para liquidar la pintura impermeabilizante.", "estado": "Pendiente", "fecha": "2026-06-14"}
-                    ],
-                    "historial_chat": [
-                        {"rol": "Director General", "mensaje": "Saludos. Soy el Director General de Ferretería El Tornillo Gigante, S.A. Tengo acceso inmediato al inventario de materiales y herramientas, movimientos de caja de la sucursal, provisión fiscal y campañas publicitarias de temporada. ¿Qué objetivos ferreteros coordinamos hoy?"}
-                    ]
-                }
+                "demo@ferreteria.com": default_demo_data
             }
         }
         guardar_db(db)
         return db
     try:
         with open(DB_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            db = json.load(f)
+        
+        # Sincronización proactiva: Asegura que el usuario demo siempre tenga cargados los nuevos datos ferreteros gigantescos
+        if "demo@ferreteria.com" in db["usuarios"]:
+            demo_user = db["usuarios"]["demo@ferreteria.com"]
+            # Si el inventario cargado es de la estructura anterior (menos de 10 productos), forzar actualización para evitar datos huérfanos
+            if len(demo_user.get("datos_empresa", {}).get("inventario", [])) < 10:
+                demo_user["config_empresa"] = default_demo_data["config_empresa"]
+                demo_user["datos_empresa"] = default_demo_data["datos_empresa"]
+                demo_user["tareas"] = default_demo_data["tareas"]
+                demo_user["historial_chat"] = default_demo_data["historial_chat"]
+                guardar_db(db)
+        else:
+            db["usuarios"]["demo@ferreteria.com"] = default_demo_data
+            guardar_db(db)
+            
+        return db
     except Exception:
-        # En caso de corrupción, devolver estructura básica de resguardo
         return {"usuarios": {}}
 
 def guardar_db(db):
