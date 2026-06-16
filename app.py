@@ -311,6 +311,7 @@ with st.sidebar:
     opciones_menu.extend([
         "Dashboard General", 
         "Carga y Plantillas CSV", 
+        "Ingresar Venta Manual",
         "Asignación de Tareas", 
         "Chatbot con Agentes", 
         "Datos del Pizarrón"
@@ -736,6 +737,106 @@ elif opcion_menu == "Carga y Plantillas CSV":
                 guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
+
+# ==========================================
+# SECCIÓN: INGRESAR VENTA MANUAL
+# ==========================================
+elif opcion_menu == "Ingresar Venta Manual":
+    st.header("🛒 Registro Manual de Ventas")
+    st.write("Registra salidas de inventario y entradas financieras de forma directa. El sistema actualizará automáticamente el stock de tu catálogo, ingresará el registro monetario en el flujo de caja, y guardará los cambios de forma persistente.")
+    
+    df_inv = st.session_state.datos_empresa["inventario"]
+    df_caj = st.session_state.datos_empresa["caja"]
+    
+    # Comprobar si el inventario está vacío (aplicación en blanco)
+    if df_inv.empty:
+        st.warning("⚠️ El catálogo de inventario está actualmente vacío. Por favor, carga una base de datos en la sección 'Carga y Plantillas CSV' antes de registrar ventas.")
+    else:
+        with st.form("form_registro_venta_manual"):
+            col_v1, col_v2 = st.columns(2)
+            
+            with col_v1:
+                st.markdown("##### 📦 Detalles de Artículo")
+                # Crear opciones descriptivas con el stock actual para el selector
+                opciones_productos = [
+                    f"{row['ID_Producto']} - {row['Producto']} (Disponibles: {row['Cantidad']})" 
+                    for idx, row in df_inv.iterrows()
+                ]
+                seleccion_prod = st.selectbox("Selecciona el Producto a Vender:", opciones_productos)
+                
+                # Extraer datos reales del producto seleccionado
+                id_prod_sel = seleccion_prod.split(" - ")[0]
+                datos_prod_sel = df_inv[df_inv["ID_Producto"] == id_prod_sel].iloc[0]
+                
+                stock_disponible = int(datos_prod_sel["Cantidad"])
+                precio_sugerido = float(datos_prod_sel["Precio_Venta"])
+                
+                cantidad_vender = st.number_input(
+                    "Cantidad a Vender:", 
+                    min_value=1, 
+                    max_value=max(1, stock_disponible), 
+                    value=1, 
+                    step=1,
+                    help="El límite superior está determinado por el stock disponible en inventario."
+                )
+                
+            with col_v2:
+                st.markdown("##### 💳 Parámetros de la Transacción")
+                metodo_pago = st.selectbox("Método de Recaudación:", ["Efectivo", "Tarjeta", "Transferencia", "Cheque", "Crédito"])
+                
+                moneda = st.session_state.config_empresa.get("moneda", "$")
+                precio_venta_final = st.number_input(
+                    f"Precio de Venta Unitario ({moneda}):", 
+                    min_value=0.0, 
+                    value=precio_sugerido, 
+                    step=0.1
+                )
+                
+                concepto_defecto = f"Venta manual de {cantidad_vender}x {datos_prod_sel['Producto']}"
+                concepto_final = st.text_input("Concepto Contable:", value=concepto_defecto)
+                
+            # Mostrar cálculo final del subtotal
+            monto_total_venta = cantidad_vender * precio_venta_final
+            st.markdown(f"### **Total Neto a Ingresar: {moneda} {monto_total_venta:,.2f}**")
+            
+            btn_confirmar_venta = st.form_submit_button("Confirmar y Registrar Venta")
+            
+            if btn_confirmar_venta:
+                if stock_disponible <= 0:
+                    st.error("❌ Transacción rechazada: El artículo seleccionado no tiene unidades en stock.")
+                elif cantidad_vender > stock_disponible:
+                    st.error(f"❌ Transacción rechazada: Intentas vender {cantidad_vender} unidades, pero solo hay {stock_disponible} disponibles.")
+                else:
+                    # 1. Descontar stock en el DataFrame de Inventario
+                    st.session_state.datos_empresa["inventario"].loc[
+                        st.session_state.datos_empresa["inventario"]["ID_Producto"] == id_prod_sel,
+                        "Cantidad"
+                    ] -= cantidad_vender
+                    
+                    # 2. Registrar el ingreso en el DataFrame del Flujo de Caja
+                    caja_saldo_anterior = df_caj["Saldo_Acumulado"].iloc[-1] if not df_caj.empty else 0.0
+                    nuevo_saldo_acumulado = caja_saldo_anterior + monto_total_venta
+                    
+                    nueva_transaccion_caja = {
+                        "Fecha": str(datetime.date.today()),
+                        "Concepto": concepto_final,
+                        "Categoria": "Ventas",
+                        "Ingreso": monto_total_venta,
+                        "Egreso": 0.0,
+                        "Saldo_Acumulado": nuevo_saldo_acumulado,
+                        "Metodo_Pago": metodo_pago
+                    }
+                    
+                    st.session_state.datos_empresa["caja"] = pd.concat([
+                        st.session_state.datos_empresa["caja"],
+                        pd.DataFrame([nueva_transaccion_caja])
+                    ], ignore_index=True)
+                    
+                    # 3. Guardar de forma persistente los cambios en db.json
+                    guardar_datos_usuario_actual()
+                    
+                    st.success(f"🎉 ¡Venta procesada con éxito! Se descontaron {cantidad_vender} unidades de '{datos_prod_sel['Producto']}' y se registró un ingreso de {moneda} {monto_total_venta:,.2f} en el flujo de caja.")
+                    st.rerun()
 
 # ==========================================
 # SECCIÓN: ASIGNACIÓN DE TAREAS
