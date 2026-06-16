@@ -7,7 +7,7 @@ import io
 import os
 
 st.set_page_config(
-    page_title="Ecosistema de Agentes Inteligentes",
+    page_title="Ecosistema de agentes inteligentes",
     page_icon="🏢",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -68,7 +68,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# CONSTANTES Y PLANTILLAS DE DATOS DE GRAN FERRETERÍA
+# CONSTANTES Y PLANTILLAS DE DATOS
 # ==========================================
 DB_FILE = "db.json"
 
@@ -145,7 +145,7 @@ def cargar_db():
             "tipo": "Ferretería Industrial, Mayorista y Materiales de Construcción Pesada",
             "direccion": "Calzada Aguilar Batres 34-10, Zona 11, Ciudad de Guatemala",
             "nit": "9876543-2",
-            "metas": "Maximizar la rotación de materiales pesados (cemento, varilla de acero), optimizar el inventario de herramientas de alto valor (soldadoras Lincoln, rotomartillos DeWalt) and proyectar el flujo de caja para cumplir con las obligaciones tributarias de gran escala.",
+            "metas": "Maximizar la rotación de materiales pesados (cemento, varilla de acero), optimizar el inventario de herramientas de alto valor (soldadoras Lincoln, rotomartillos DeWalt) y proyectar el flujo de caja para cumplir con las obligaciones tributarias de gran escala.",
             "moneda": "Q"
         },
         "datos_empresa": {
@@ -182,10 +182,8 @@ def cargar_db():
         with open(DB_FILE, "r", encoding="utf-8") as f:
             db = json.load(f)
         
-        # Sincronización proactiva: Asegura que el usuario demo siempre tenga cargados los nuevos datos ferreteros gigantescos
         if "demo@ferreteria.com" in db["usuarios"]:
             demo_user = db["usuarios"]["demo@ferreteria.com"]
-            # Si el inventario cargado es de la estructura anterior (menos de 10 productos), forzar actualización para evitar datos huérfanos
             if len(demo_user.get("datos_empresa", {}).get("inventario", [])) < 10:
                 demo_user["config_empresa"] = default_demo_data["config_empresa"]
                 demo_user["datos_empresa"] = default_demo_data["datos_empresa"]
@@ -207,15 +205,12 @@ def guardar_db(db):
     except Exception as e:
         st.error(f"Fallo al guardar en base de datos: {str(e)}")
 
-# Guardar datos del usuario activo al realizar cualquier cambio
 def guardar_datos_usuario_actual():
     if st.session_state.get("logged_in") and st.session_state.get("rol_actual") != "admin":
         db = cargar_db()
         email = st.session_state.usuario_actual
         if email in db["usuarios"]:
             db["usuarios"][email]["config_empresa"] = st.session_state.config_empresa
-            
-            # Serializamos los DataFrames a diccionarios
             db["usuarios"][email]["datos_empresa"] = {
                 k: v.to_dict(orient="records") if isinstance(v, pd.DataFrame) else v
                 for k, v in st.session_state.datos_empresa.items()
@@ -234,19 +229,18 @@ if "logged_in" not in st.session_state:
 
 db_actual = cargar_db()
 
-# Pantalla de Login si no está autenticado
 if not st.session_state.logged_in:
-    st.title("🏢 Ecosistema de Agentes Inteligentes")
-    st.subheader("Control Corporativo Multi-Agente con IA")
+    st.title("🏢 Ecosistema de agentes inteligentes")
+    st.subheader("Control corporativo multi-agente con IA")
     
     col_log1, col_log2, col_log3 = st.columns([1, 1.5, 1])
     with col_log2:
         st.markdown("<br><br>", unsafe_allow_html=True)
         with st.form("form_inicio_sesion", clear_on_submit=False):
-            st.markdown("### 🔐 Acceso Autorizado")
-            correo_ingresado = st.text_input("Correo Electrónico:", placeholder="ejemplo@empresa.com").strip().lower()
+            st.markdown("### 🔐 Acceso autorizado")
+            correo_ingresado = st.text_input("Correo electrónico:", placeholder="ejemplo@empresa.com").strip().lower()
             password_ingresado = st.text_input("Contraseña:", type="password", placeholder="••••••••")
-            boton_login = st.form_submit_button("Iniciar Sesión")
+            boton_login = st.form_submit_button("Iniciar sesión")
             
             if boton_login:
                 if correo_ingresado in db_actual["usuarios"]:
@@ -257,7 +251,6 @@ if not st.session_state.logged_in:
                             st.session_state.usuario_actual = correo_ingresado
                             st.session_state.rol_actual = datos_usr.get("rol", "usuario")
                             
-                            # Cargar información del perfil de sesión
                             if st.session_state.rol_actual != "admin":
                                 st.session_state.config_empresa = datos_usr["config_empresa"]
                                 st.session_state.datos_empresa = {
@@ -269,26 +262,25 @@ if not st.session_state.logged_in:
                             st.success("¡Acceso concedido! Cargando centro de control...")
                             st.rerun()
                         else:
-                            st.error("⚠️ Acceso Denegado: Tu usuario no ha sido autorizado por el administrador todavía.")
+                            st.error("⚠️ Acceso denegado: Tu usuario no ha sido autorizado por el administrador todavía.")
                     else:
                         st.error("❌ Contraseña incorrecta. Inténtalo de nuevo.")
                 else:
                     st.error("❌ El correo ingresado no está registrado en el ecosistema.")
         
-        # Informativo de credenciales por defecto para el evaluador
-        with st.expander("ℹ️ Información de Cuentas de Prueba"):
+        with st.expander("ℹ️ Información de cuentas de prueba"):
             st.markdown("""
-            - **Administrador General:**
+            - **Administrador general:**
               - *Correo:* `admin@empresa.com`
               - *Contraseña:* `admin123`
-            - **Usuario Demostración (Ferretería con datos cargados):**
+            - **Usuario demostración (Ferretería con datos cargados):**
               - *Correo:* `demo@ferreteria.com`
               - *Contraseña:* `demo123`
             """)
     st.stop()
 
 # ==========================================
-# MENU LATERAL - SÓLO PARA LOGUEADOS
+# MENÚ LATERAL - SÓLO PARA LOGUEADOS
 # ==========================================
 if "api_key" not in st.session_state:
     try:
@@ -297,32 +289,30 @@ if "api_key" not in st.session_state:
         st.session_state.api_key = ""
 
 with st.sidebar:
-    st.markdown(f"👤 **Sesión Activa:** `{st.session_state.usuario_actual}`")
+    st.markdown(f"👤 **Sesión activa:** `{st.session_state.usuario_actual}`")
     st.markdown(f"🏷️ **Rol:** `{st.session_state.rol_actual.capitalize()}`")
     
     st.markdown("---")
     st.header("📌 Navegación")
     
     opciones_menu = []
-    # El administrador puede gestionar usuarios, y si lo desea, también probar el pizarrón de prueba
     if st.session_state.rol_actual == "admin":
-        opciones_menu.append("👥 Control del Administrador")
+        opciones_menu.append("👥 Control del administrador")
     
     opciones_menu.extend([
-        "Dashboard General", 
-        "Carga y Plantillas CSV", 
-        "Ingresar Venta Manual",
-        "Asignación de Tareas", 
-        "Chatbot con Agentes", 
-        "Datos del Pizarrón"
+        "Dashboard general", 
+        "Carga y plantillas CSV", 
+        "Ingresar venta manual",
+        "Asignación de tareas", 
+        "Chatbot con agentes", 
+        "Datos del pizarrón"
     ])
     
-    opcion_menu = st.radio("Secciones de Trabajo:", opciones_menu)
+    opcion_menu = st.radio("Secciones de trabajo:", opciones_menu)
     
-    # Si el usuario actual es normal, puede configurar su propio perfil empresarial
     if st.session_state.rol_actual != "admin":
         st.markdown("---")
-        st.subheader("Configuración de Perfil")
+        st.subheader("Configuración de perfil")
         
         nombre_prev = st.session_state.config_empresa["nombre"]
         tipo_prev = st.session_state.config_empresa["tipo"]
@@ -332,10 +322,10 @@ with st.sidebar:
         moneda_prev = st.session_state.config_empresa.get("moneda", "$")
 
         st.session_state.config_empresa["nombre"] = st.text_input("Empresa S.A.:", nombre_prev)
-        st.session_state.config_empresa["tipo"] = st.text_input("Tipo de Comercio:", tipo_prev)
-        st.session_state.config_empresa["direccion"] = st.text_input("Domicilio Fiscal:", dir_prev)
-        st.session_state.config_empresa["nit"] = st.text_input("NIT de la Empresa:", nit_prev)
-        st.session_state.config_empresa["metas"] = st.text_area("Objetivos de Operaciones:", metas_prev)
+        st.session_state.config_empresa["tipo"] = st.text_input("Tipo de comercio:", tipo_prev)
+        st.session_state.config_empresa["direccion"] = st.text_input("Domicilio fiscal:", dir_prev)
+        st.session_state.config_empresa["nit"] = st.text_input("NIT de la empresa:", nit_prev)
+        st.session_state.config_empresa["metas"] = st.text_area("Objetivos de operaciones:", metas_prev)
         
         lista_opciones_divisa = ["$", "Q", "€", "MXN", "COP", "CLP", "PEN", "Bs.", "HNL", "NIO", "CRC", "Personalizado"]
         try:
@@ -343,13 +333,12 @@ with st.sidebar:
         except ValueError:
             def_idx = 11
             
-        moneda_seleccionada = st.selectbox("Moneda / Divisa:", options=lista_opciones_divisa, index=def_idx)
+        moneda_seleccionada = st.selectbox("Moneda / divisa:", options=lista_opciones_divisa, index=def_idx)
         if moneda_seleccionada == "Personalizado":
             st.session_state.config_empresa["moneda"] = st.text_input("Símbolo de tu moneda:", value=moneda_prev if moneda_prev != "Personalizado" else "$")
         else:
             st.session_state.config_empresa["moneda"] = moneda_seleccionada
 
-        # Guardar inmediatamente si hay cambios detectados en la barra de configuración
         if (nombre_prev != st.session_state.config_empresa["nombre"] or 
             tipo_prev != st.session_state.config_empresa["tipo"] or
             dir_prev != st.session_state.config_empresa["direccion"] or
@@ -358,19 +347,17 @@ with st.sidebar:
             moneda_prev != st.session_state.config_empresa["moneda"]):
             guardar_datos_usuario_actual()
 
-    # Botón para cerrar sesión de manera segura
     st.markdown("---")
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
+    if st.button("🚪 Cerrar sesión", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.usuario_actual = ""
         st.session_state.rol_actual = ""
         st.rerun()
 
-# Si el administrador entra a una sección de simulación, le creamos datos temporales para evitar roturas
-if st.session_state.rol_actual == "admin" and opcion_menu != "👥 Control del Administrador":
+if st.session_state.rol_actual == "admin" and opcion_menu != "👥 Control del administrador":
     if "config_empresa" not in st.session_state:
         st.session_state.config_empresa = {
-            "nombre": "Administración del Sistema",
+            "nombre": "Administración del sistema",
             "tipo": "Soporte",
             "direccion": "N/A",
             "nit": "N/A",
@@ -389,30 +376,29 @@ if st.session_state.rol_actual == "admin" and opcion_menu != "👥 Control del A
 # ==========================================
 # VISTA GENERAL: CONTROL DEL ADMINISTRADOR
 # ==========================================
-if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del Administrador":
-    st.header("👥 Consola de Control del Administrador")
+if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del administrador":
+    st.header("👥 Consola de control del administrador")
     st.write("Registra, autoriza y supervisa las cuentas de acceso del ecosistema de agentes inteligentes de tu plataforma.")
 
     col_adm1, col_adm2 = st.columns([1, 1.5])
     
     with col_adm1:
-        st.markdown("### ➕ Registrar Nuevo Usuario")
+        st.markdown("### ➕ Registrar nuevo usuario")
         with st.form("form_crear_usuario", clear_on_submit=True):
-            nuevo_correo = st.text_input("Asignar Correo Electrónico:", placeholder="correo@empresa.com").strip().lower()
-            nuevo_password = st.text_input("Asignar Contraseña Temporal:", placeholder="Clave de acceso")
+            nuevo_correo = st.text_input("Asignar correo electrónico:", placeholder="correo@empresa.com").strip().lower()
+            nuevo_password = st.text_input("Asignar contraseña temporal:", placeholder="Clave de acceso")
             autorizacion_inicial = st.checkbox("Autorizar acceso inmediatamente", value=True)
-            btn_crear = st.form_submit_button("Crear y Registrar")
+            btn_crear = st.form_submit_button("Crear y registrar")
             
             if btn_crear:
                 if nuevo_correo and nuevo_password:
                     if nuevo_correo not in db_actual["usuarios"]:
-                        # REGISTRAR NUEVO USUARIO TOTALMENTE EN BLANCO ("Aplicación que es blanca")
                         db_actual["usuarios"][nuevo_correo] = {
                             "password": nuevo_password,
                             "autorizado": autorizacion_inicial,
                             "rol": "usuario",
                             "config_empresa": {
-                                "nombre": "Nueva Empresa Limpia",
+                                "nombre": "Nueva empresa limpia",
                                 "tipo": "Sin definir",
                                 "direccion": "Sin definir",
                                 "nit": "Sin definir",
@@ -427,7 +413,7 @@ if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del A
                             },
                             "tareas": [],
                             "historial_chat": [
-                                {"rol": "Director General", "mensaje": "Saludos. He inicializado tu nuevo entorno empresarial de forma limpia. Tu aplicación está totalmente 'en blanco' y lista para operar. Dirígete a la sección 'Carga y Plantillas CSV' para descargar las plantillas estándar, adaptarlas con tus datos de negocio y subirlas para que comencemos a trabajar coordinadamente."}
+                                {"rol": "Director General", "mensaje": "Saludos. He inicializado tu nuevo entorno empresarial de forma limpia. Tu aplicación está totalmente 'en blanco' y lista para operar. Dirígete a la sección 'Carga y plantillas CSV' para descargar las plantillas estándar, adaptarlas con tus datos de negocio y subirlas para que comencemos a trabajar coordinadamente."}
                             ]
                         }
                         guardar_db(db_actual)
@@ -439,13 +425,12 @@ if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del A
                     st.warning("Completa todos los campos obligatorios.")
 
     with col_adm2:
-        st.markdown("### 📋 Listado y Autorización de Usuarios")
+        st.markdown("### 📋 Listado y autorización de usuarios")
         st.write("Modifica el estado de autorización para suspender o permitir el inicio de sesión.")
         
         usuarios_listados = list(db_actual["usuarios"].keys())
         
         for usr_mail in usuarios_listados:
-            # No permitir que el admin se desautorice o elimine a sí mismo
             if usr_mail == "admin@empresa.com":
                 continue
                 
@@ -458,7 +443,6 @@ if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del A
                 col_btn_aut, col_btn_del = st.columns([2, 1])
                 
                 with col_btn_aut:
-                    # Switch para cambiar autorización
                     nuevo_estado = st.toggle("Autorizado para entrar", value=estado_aut, key=f"tog_{usr_mail}")
                     if nuevo_estado != estado_aut:
                         db_actual["usuarios"][usr_mail]["autorizado"] = nuevo_estado
@@ -479,14 +463,14 @@ if st.session_state.rol_actual == "admin" and opcion_menu == "👥 Control del A
 # ==========================================
 def consultar_openrouter(prompt_sistema, prompt_usuario):
     if not st.session_state.api_key:
-        return "⚠️ Error: No se ha configurado la API Key de OpenRouter. Ingresa tu clave en los secretos de Streamlit o utilízala desde el menú lateral para activar los agentes."
+        return "⚠️ Error: No se ha configurado la API Key de OpenRouter. Ingresa tu clave en el menú lateral para activar los agentes."
     
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {st.session_state.api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://streamlit.io",
-        "X-Title": "Sistema de Gestion Multi-Agente Corporativo"
+        "X-Title": "Sistema de gestión multi-agente corporativo"
     }
     
     data = {
@@ -500,7 +484,10 @@ def consultar_openrouter(prompt_sistema, prompt_usuario):
     try:
         response = requests.post(url, headers=headers, json=data, timeout=35)
         if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
+            res_json = response.json()
+            if 'choices' in res_json and len(res_json['choices']) > 0:
+                return res_json['choices'][0]['message']['content']
+            return "Error: Respuesta del modelo vacía o inesperada de OpenRouter."
         else:
             return f"Error en el servidor de OpenRouter (Código {response.status_code}): {response.text}"
     except Exception as e:
@@ -590,8 +577,8 @@ def extraer_json_de_respuesta(texto_crudo):
 # ==========================================
 # SECCIÓN: DASHBOARD GENERAL
 # ==========================================
-if opcion_menu == "Dashboard General":
-    st.header("📈 Informe del Agente Director General")
+if opcion_menu == "Dashboard general":
+    st.header("📈 Informe del agente director general")
     st.write("Análisis general de la empresa recopilado de forma cruzada por los agentes a cargo de los datos.")
     
     moneda = st.session_state.config_empresa.get("moneda", "$")
@@ -612,33 +599,32 @@ if opcion_menu == "Dashboard General":
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     with col_m1:
         st.markdown(f"""<div class='metric-container'>
-            <small style='color: #64748b;'>📦 Valor de Inventario</small><br>
+            <small style='color: #64748b;'>📦 Valor de inventario</small><br>
             <b style='font-size: 22px; color: #0f172a;'>{moneda} {val_inv:,.2f}</b>
         </div>""", unsafe_allow_html=True)
     with col_m2:
         st.markdown(f"""<div class='metric-container'>
-            <small style='color: #64748b;'>💰 Saldo Actual en Caja</small><br>
+            <small style='color: #64748b;'>💰 Saldo actual en caja</small><br>
             <b style='font-size: 22px; color: #16a34a;'>{moneda} {caja_act:,.2f}</b>
         </div>""", unsafe_allow_html=True)
     with col_m3:
         st.markdown(f"""<div class='metric-container'>
-            <small style='color: #64748b;'>📣 Leads Generados (Mkt)</small><br>
+            <small style='color: #64748b;'>📣 Leads generados (Mkt)</small><br>
             <b style='font-size: 22px; color: #2563eb;'>{leads_tot:,} leads</b>
         </div>""", unsafe_allow_html=True)
     with col_m4:
         st.markdown(f"""<div class='metric-container'>
-            <small style='color: #64748b;'>⚖️ Impuestos por Pagar</small><br>
+            <small style='color: #64748b;'>⚖️ Impuestos por pagar</small><br>
             <b style='font-size: 22px; color: #dc2626;'>{moneda} {imp_pend:,.2f}</b>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Detección de aplicación vacía ("en blanco")
     es_vacia = (df_inv.empty and df_caj.empty and df_mkt.empty and df_imp.empty)
     if es_vacia:
         st.warning("ℹ️ **Tu aplicación se encuentra actualmente 'en blanco'**. Sube archivos de ejemplo de tu negocio en la pestaña de carga de CSV para que los agentes cuenten con información real sobre la cual operar.")
 
-    if st.button("🔄 Generar Informe de Auditoría Operativa con el Director General"):
+    if st.button("🔄 Generar informe de auditoría operativa con el director general"):
         with st.spinner("El CEO está llamando a los jefes de departamento y leyendo los libros de control corporativo..."):
             prompt_sys = obtener_prompt_agente("Director General")
             prompt_user = f"Analiza detalladamente los números que tenemos en inventario, balances de caja, rendimiento de publicidad y obligaciones tributarias. Reporta de forma ejecutiva un diagnóstico crítico de la situación. Recuerda usar siempre la moneda '{moneda}' en tu respuesta."
@@ -647,7 +633,7 @@ if opcion_menu == "Dashboard General":
             st.rerun()
             
     if "ultimo_informe" in st.session_state:
-        st.markdown("### 📋 Evaluación Operativa de la Dirección General:")
+        st.markdown("### 📋 Evaluación operativa de la dirección general:")
         st.markdown(st.session_state.ultimo_informe)
     else:
         st.info("Para recibir un diagnóstico de tus operaciones y cómo interactúan las metas con tus datos reales, haz clic en el botón superior.")
@@ -655,85 +641,85 @@ if opcion_menu == "Dashboard General":
 # ==========================================
 # SECCIÓN: CARGA Y PLANTILLAS CSV
 # ==========================================
-elif opcion_menu == "Carga y Plantillas CSV":
-    st.header("📥 Descarga de Plantillas y Carga de Archivos")
+elif opcion_menu == "Carga y plantillas CSV":
+    st.header("📥 Descarga de plantillas y carga de archivos")
     st.write("Para que los agentes inteligentes tomen decisiones, puedes descargar nuestras plantillas estándar, editarlas con tus datos corporativos reales de tu empresa y subirlas nuevamente.")
     
     st.markdown("---")
-    st.subheader("1. Descarga de Plantillas Oficiales")
+    st.subheader("1. Descarga de plantillas oficiales")
     
     col_d1, col_d2, col_d3, col_d4 = st.columns(4)
     with col_d1:
-        st.write("📦 **Módulo de Inventario**")
+        st.write("📦 **Módulo de inventario**")
         st.download_button(
-            label="Descargar CSV de Inventario",
+            label="Descargar CSV de inventario",
             data=PLANTILLAS_CSV["inventario"],
             file_name="plantilla_inventario.csv",
             mime="text/csv"
         )
     with col_d2:
-        st.write("💰 **Módulo de Caja/Finanzas**")
+        st.write("💰 **Módulo de caja/finanzas**")
         st.download_button(
-            label="Descargar CSV de Caja",
+            label="Descargar CSV de caja",
             data=PLANTILLAS_CSV["caja"],
             file_name="plantilla_caja.csv",
             mime="text/csv"
         )
     with col_d3:
-        st.write("📣 **Módulo de Mercadeo**")
+        st.write("📣 **Módulo de mercadeo**")
         st.download_button(
-            label="Descargar CSV de Mercadeo",
+            label="Descargar CSV de mercadeo",
             data=PLANTILLAS_CSV["mercadeo"],
             file_name="plantilla_mercadeo.csv",
             mime="text/csv"
         )
     with col_d4:
-        st.write("⚖️ **Módulo de Impuestos**")
+        st.write("⚖️ **Módulo de impuestos**")
         st.download_button(
-            label="Descargar CSV de Impuestos",
+            label="Descargar CSV de impuestos",
             data=PLANTILLAS_CSV["impuestos"],
             file_name="plantilla_impuestos.csv",
             mime="text/csv"
         )
         
     st.markdown("---")
-    st.subheader("2. Cargar Archivos de Datos Reales")
+    st.subheader("2. Cargar archivos de datos reales")
     
     col_u1, col_u2 = st.columns(2)
     with col_u1:
-        f_inv = st.file_uploader("Subir CSV de Inventario Real", type=["csv"])
+        f_inv = st.file_uploader("Subir CSV de inventario real", type=["csv"])
         if f_inv:
             try:
                 st.session_state.datos_empresa["inventario"] = pd.read_csv(f_inv)
-                st.success("✅ Archivo de Inventario actualizado con éxito.")
+                st.success("✅ Archivo de inventario actualizado con éxito.")
                 guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
                 
-        f_caj = st.file_uploader("Subir CSV de Caja Real", type=["csv"])
+        f_caj = st.file_uploader("Subir CSV de caja real", type=["csv"])
         if f_caj:
             try:
                 st.session_state.datos_empresa["caja"] = pd.read_csv(f_caj)
-                st.success("✅ Archivo de Caja y Movimientos actualizado con éxito.")
+                st.success("✅ Archivo de caja y movimientos actualizado con éxito.")
                 guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
 
     with col_u2:
-        f_mkt = st.file_uploader("Subir CSV de Mercadeo Real", type=["csv"])
+        f_mkt = st.file_uploader("Subir CSV de mercadeo real", type=["csv"])
         if f_mkt:
             try:
                 st.session_state.datos_empresa["mercadeo"] = pd.read_csv(f_mkt)
-                st.success("✅ Archivo de Campañas de Mercadeo actualizado con éxito.")
+                st.success("✅ Archivo de campañas de mercadeo actualizado con éxito.")
                 guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
                 
-        f_imp = st.file_uploader("Subir CSV de Impuestos Real", type=["csv"])
+        f_imp = st.file_uploader("Subir CSV de impuestos real", type=["csv"])
         if f_imp:
             try:
                 st.session_state.datos_empresa["impuestos"] = pd.read_csv(f_imp)
-                st.success("✅ Archivo de Obligaciones de Impuestos actualizado con éxito.")
+                st.success("✅ Archivo de obligaciones de impuestos actualizado con éxito.")
                 guardar_datos_usuario_actual()
             except Exception as e:
                 st.error(f"Error de formato al leer el CSV: {str(e)}")
@@ -741,30 +727,27 @@ elif opcion_menu == "Carga y Plantillas CSV":
 # ==========================================
 # SECCIÓN: INGRESAR VENTA MANUAL
 # ==========================================
-elif opcion_menu == "Ingresar Venta Manual":
-    st.header("🛒 Registro Manual de Ventas")
+elif opcion_menu == "Ingresar venta manual":
+    st.header("🛒 Registro manual de ventas")
     st.write("Registra salidas de inventario y entradas financieras de forma directa. El sistema actualizará automáticamente el stock de tu catálogo, ingresará el registro monetario en el flujo de caja, y guardará los cambios de forma persistente.")
     
     df_inv = st.session_state.datos_empresa["inventario"]
     df_caj = st.session_state.datos_empresa["caja"]
     
-    # Comprobar si el inventario está vacío (aplicación en blanco)
     if df_inv.empty:
-        st.warning("⚠️ El catálogo de inventario está actualmente vacío. Por favor, carga una base de datos en la sección 'Carga y Plantillas CSV' antes de registrar ventas.")
+        st.warning("⚠️ El catálogo de inventario está actualmente vacío. Por favor, carga una base de datos en la sección 'Carga y plantillas CSV' antes de registrar ventas.")
     else:
         with st.form("form_registro_venta_manual"):
             col_v1, col_v2 = st.columns(2)
             
             with col_v1:
-                st.markdown("##### 📦 Detalles de Artículo")
-                # Crear opciones descriptivas con el stock actual para el selector
+                st.markdown("##### 📦 Detalles de artículo")
                 opciones_productos = [
                     f"{row['ID_Producto']} - {row['Producto']} (Disponibles: {row['Cantidad']})" 
                     for idx, row in df_inv.iterrows()
                 ]
-                seleccion_prod = st.selectbox("Selecciona el Producto a Vender:", opciones_productos)
+                seleccion_prod = st.selectbox("Selecciona el producto a vender:", opciones_productos)
                 
-                # Extraer datos reales del producto seleccionado
                 id_prod_sel = seleccion_prod.split(" - ")[0]
                 datos_prod_sel = df_inv[df_inv["ID_Producto"] == id_prod_sel].iloc[0]
                 
@@ -772,7 +755,7 @@ elif opcion_menu == "Ingresar Venta Manual":
                 precio_sugerido = float(datos_prod_sel["Precio_Venta"])
                 
                 cantidad_vender = st.number_input(
-                    "Cantidad a Vender:", 
+                    "Cantidad a vender:", 
                     min_value=1, 
                     max_value=max(1, stock_disponible), 
                     value=1, 
@@ -781,25 +764,24 @@ elif opcion_menu == "Ingresar Venta Manual":
                 )
                 
             with col_v2:
-                st.markdown("##### 💳 Parámetros de la Transacción")
-                metodo_pago = st.selectbox("Método de Recaudación:", ["Efectivo", "Tarjeta", "Transferencia", "Cheque", "Crédito"])
+                st.markdown("##### 💳 Parámetros de la transacción")
+                metodo_pago = st.selectbox("Método de recaudación:", ["Efectivo", "Tarjeta", "Transferencia", "Cheque", "Crédito"])
                 
                 moneda = st.session_state.config_empresa.get("moneda", "$")
                 precio_venta_final = st.number_input(
-                    f"Precio de Venta Unitario ({moneda}):", 
+                    f"Precio de venta unitario ({moneda}):", 
                     min_value=0.0, 
                     value=precio_sugerido, 
                     step=0.1
                 )
                 
                 concepto_defecto = f"Venta manual de {cantidad_vender}x {datos_prod_sel['Producto']}"
-                concepto_final = st.text_input("Concepto Contable:", value=concepto_defecto)
+                concepto_final = st.text_input("Concepto contable:", value=concepto_defecto)
                 
-            # Mostrar cálculo final del subtotal
             monto_total_venta = cantidad_vender * precio_venta_final
-            st.markdown(f"### **Total Neto a Ingresar: {moneda} {monto_total_venta:,.2f}**")
+            st.markdown(f"### **Total neto a ingresar: {moneda} {monto_total_venta:,.2f}**")
             
-            btn_confirmar_venta = st.form_submit_button("Confirmar y Registrar Venta")
+            btn_confirmar_venta = st.form_submit_button("Confirmar y registrar venta")
             
             if btn_confirmar_venta:
                 if stock_disponible <= 0:
@@ -807,17 +789,15 @@ elif opcion_menu == "Ingresar Venta Manual":
                 elif cantidad_vender > stock_disponible:
                     st.error(f"❌ Transacción rechazada: Intentas vender {cantidad_vender} unidades, pero solo hay {stock_disponible} disponibles.")
                 else:
-                    # 1. Descontar stock en el DataFrame de Inventario
                     st.session_state.datos_empresa["inventario"].loc[
                         st.session_state.datos_empresa["inventario"]["ID_Producto"] == id_prod_sel,
                         "Cantidad"
                     ] -= cantidad_vender
                     
-                    # 2. Registrar el ingreso en el DataFrame del Flujo de Caja
                     caja_saldo_anterior = df_caj["Saldo_Acumulado"].iloc[-1] if not df_caj.empty else 0.0
                     nuevo_saldo_acumulado = caja_saldo_anterior + monto_total_venta
                     
-                    nueva_transaccion_caja = {
+                    nueva_transaccion_caja = pd.DataFrame([{
                         "Fecha": str(datetime.date.today()),
                         "Concepto": concepto_final,
                         "Categoria": "Ventas",
@@ -825,14 +805,13 @@ elif opcion_menu == "Ingresar Venta Manual":
                         "Egreso": 0.0,
                         "Saldo_Acumulado": nuevo_saldo_acumulado,
                         "Metodo_Pago": metodo_pago
-                    }
+                    }])
                     
                     st.session_state.datos_empresa["caja"] = pd.concat([
-                        st.session_state.datos_empresa["caja"],
-                        pd.DataFrame([nueva_transaccion_caja])
+                        st.session_state.datos_empresa["caja"].astype(nueva_transaccion_caja.dtypes),
+                        nueva_transaccion_caja
                     ], ignore_index=True)
                     
-                    # 3. Guardar de forma persistente los cambios en db.json
                     guardar_datos_usuario_actual()
                     
                     st.success(f"🎉 ¡Venta procesada con éxito! Se descontaron {cantidad_vender} unidades de '{datos_prod_sel['Producto']}' y se registró un ingreso de {moneda} {monto_total_venta:,.2f} en el flujo de caja.")
@@ -841,16 +820,16 @@ elif opcion_menu == "Ingresar Venta Manual":
 # ==========================================
 # SECCIÓN: ASIGNACIÓN DE TAREAS
 # ==========================================
-elif opcion_menu == "Asignación de Tareas":
-    st.header("📋 Tablero de Distribución y Asignación de Tareas")
+elif opcion_menu == "Asignación de tareas":
+    st.header("📋 Tablero de distribución y asignación de tareas")
     st.write("Administra el cronograma operativo de tus agentes utilizando cualquiera de los tres modos de asignación.")
     
-    st.subheader("🤖 Modo 3: Piloto Automático de Dirección")
+    st.subheader("🤖 Modo 3: Piloto automático de dirección")
     st.write("El Director General revisa el rendimiento global de la empresa y diseña de forma autónoma misiones de urgencia para resolver cuellos de botella detectados.")
     
     moneda = st.session_state.config_empresa.get("moneda", "$")
 
-    if st.button("🚀 Iniciar Generación en Piloto Automático"):
+    if st.button("🚀 Iniciar generación en piloto automático"):
         with st.spinner("El CEO está examinando las tablas compartidas de impuestos pendientes, rotaciones y dinero disponible..."):
             prompt_sys = obtener_prompt_agente("Director General")
             prompt_user = f"""Evalúa el estado corporativo y genera un plan de 4 tareas de alta prioridad para hoy (una para cada especialista: Financiero, Inventario, Impuestos, Mercadeo).
@@ -880,7 +859,7 @@ elif opcion_menu == "Asignación de Tareas":
                 st.rerun()
             except Exception as e:
                 st.error("No se pudo estructurar el JSON operativo de forma directa. Inténtalo de nuevo.")
-                with st.expander("Ver Reporte Crudo del LLM"):
+                with st.expander("Ver reporte crudo del LLM"):
                     st.text(respuesta)
 
     st.markdown("---")
@@ -888,11 +867,11 @@ elif opcion_menu == "Asignación de Tareas":
     col_m1, col_m2 = st.columns(2)
     
     with col_m1:
-        st.markdown("#### 🎯 Modo 1: Asignación Directa")
+        st.markdown("#### 🎯 Modo 1: Asignación directa")
         with st.form("form_creacion_directa", clear_on_submit=True):
             agente_target = st.selectbox("Asignar directamente a:", ["Financiero", "Inventario", "Impuestos", "Mercadeo"])
             desc_directa = st.text_input("Ingresa los objetivos de la tarea:")
-            submit_dir = st.form_submit_button("Crear Tarea")
+            submit_dir = st.form_submit_button("Crear tarea")
             
             if submit_dir:
                 if desc_directa:
@@ -911,14 +890,14 @@ elif opcion_menu == "Asignación de Tareas":
                     st.warning("Escribe una descripción de objetivos.")
 
     with col_m2:
-        st.markdown("#### 🗣️ Modo 2: Dictado Centralizado a Gerencia")
+        st.markdown("#### 🗣️ Modo 2: Dictado centralizado a gerencia")
         with st.form("form_creacion_centralizada", clear_on_submit=True):
             orden_general = st.text_area("Orden global o problema genérico:", placeholder="Ej: Se aproxima la compra de stock de mercadería y necesitamos prever los saldos.")
-            submit_cen = st.form_submit_button("Asignar por Canal CEO")
+            submit_cen = st.form_submit_button("Asignar por canal CEO")
             
             if submit_cen:
                 if orden_general:
-                    with st.spinner("El CEO está reuniendo a los departamentos para coordinar la estrategia..."):
+                    with st.spinner("El CEO está reuniendo a los departamentos para koordinar la estrategia..."):
                         prompt_sys = obtener_prompt_agente("Director General")
                         prompt_user = f"""El usuario ha dictado la siguiente orden general: "{orden_general}".
                         Desglosa esta orden en tareas específicas para cada uno de los especialistas involucrados.
@@ -949,20 +928,20 @@ elif opcion_menu == "Asignación de Tareas":
 
     st.markdown("---")
     
-    st.subheader("📋 Pizarrón de Operaciones Diario")
+    st.subheader("📋 Pizarrón de operaciones diario")
     if st.session_state.tareas:
         df_tareas = pd.DataFrame(st.session_state.tareas)
         st.dataframe(df_tareas, use_container_width=True, hide_index=True)
         
         col_tid, col_testado, col_tbtn = st.columns([1, 2, 2])
         with col_tid:
-            id_modificar = st.number_input("ID de la Tarea a actualizar:", min_value=1, step=1)
+            id_modificar = st.number_input("ID de la tarea a actualizar:", min_value=1, step=1)
         with col_testado:
             estado_nuevo = st.selectbox("Cambiar estado:", ["Pendiente", "En Proceso", "Completada"])
         with col_tbtn:
             st.write("")
             st.write("")
-            if st.button("Guardar Cambios de Tarea"):
+            if st.button("Guardar cambios de tarea"):
                 encontrada = False
                 for t in st.session_state.tareas:
                     if t["id"] == id_modificar:
@@ -981,8 +960,8 @@ elif opcion_menu == "Asignación de Tareas":
 # ==========================================
 # SECCIÓN: CHATBOT CON AGENTES
 # ==========================================
-elif opcion_menu == "Chatbot con Agentes":
-    st.header("💬 Sala de Reuniones Ejecutiva (Chatbot)")
+elif opcion_menu == "Chatbot con agentes":
+    st.header("💬 Sala de reuniones ejecutiva (Chatbot)")
     st.write("Habla de manera interactiva con tus agentes especialistas. Cada agente conoce la base de datos compartida y cooperará para ayudarte a cumplir tus metas estratégicas.")
     
     interlocutor_activo = st.selectbox("Convocar a reunión a:", ["Director General", "Financiero", "Inventario", "Impuestos", "Mercadeo"])
@@ -994,7 +973,7 @@ elif opcion_menu == "Chatbot con Agentes":
         
     with st.form("form_chat", clear_on_submit=True):
         input_usr = st.text_input("Introduce tus instrucciones, consultas o inquietudes sobre el estado empresarial:")
-        btn_enviar = st.form_submit_button("Enviar Mensaje a la Sala")
+        btn_enviar = st.form_submit_button("Enviar mensaje a la sala")
         
     if btn_enviar and input_usr:
         st.session_state.historial_chat.append({"rol": "Usuario", "mensaje": input_usr})
@@ -1012,11 +991,11 @@ elif opcion_menu == "Chatbot con Agentes":
 # ==========================================
 # SECCIÓN: DATOS DEL PIZARRÓN
 # ==========================================
-elif opcion_menu == "Datos del Pizarrón":
-    st.header("💾 Registro de Libros de Datos")
+elif opcion_menu == "Datos del pizarrón":
+    st.header("💾 Registro de libros de datos")
     st.write("Esta sección muestra las bases de datos de solo lectura compartidas. Los agentes corporativos consultan estos registros al instante para emitir dictámenes coherentes.")
     
-    pestana1, pestana2, pestana3, pestana4 = st.tabs(["📦 Inventario de Productos", "💰 Caja y Egresos", "📣 Campañas de Mercadeo", "⚖️ Impuestos y Provisiones"])
+    pestana1, pestana2, pestana3, pestana4 = st.tabs(["📦 Inventario de productos", "💰 Caja y egresos", "📣 Campañas de mercadeo", "⚖️ Impuestos y provisiones"])
     
     with pestana1:
         st.dataframe(st.session_state.datos_empresa["inventario"], use_container_width=True, hide_index=True)
