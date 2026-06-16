@@ -103,7 +103,7 @@ PLANTILLAS_CSV = {
         "2026-06-15,Pago importación de soldadoras Lincoln Electric,Inventario,0.00,4560.00,65790.00,Transferencia\n"
         "2026-06-16,Adquisición de equipo de seguridad industrial MSA,Inventario,0.00,1875.00,63915.00,Transferencia\n"
         "2026-06-16,Nómina quincenal personal operativo y asesores,Planilla,0.00,6500.00,57415.00,Transferencia\n"
-        "2026-06-17,Pago de servicios generales (Luz trifásica, Internet),Servicios,0.00,480.00,56935.00,Debito\n"
+        "2026-06-17,Pago de servicios generales (Luz trifásica - Internet),Servicios,0.00,480.00,56935.00,Debito\n"
         "2026-06-17,Ventas del día canal mostrador minorista,Ventas,4890.00,0.00,61825.00,Efectivo"
     ),
     "mercadeo": (
@@ -145,7 +145,7 @@ def cargar_db():
             "tipo": "Ferretería Industrial, Mayorista y Materiales de Construcción Pesada",
             "direccion": "Calzada Aguilar Batres 34-10, Zona 11, Ciudad de Guatemala",
             "nit": "9876543-2",
-            "metas": "Maximizar la rotación de materiales pesados (cemento, varilla de acero), optimizar el inventario de herramientas de alto valor (soldadoras Lincoln, rotomartillos DeWalt) y proyectar el flujo de caja para cumplir con las obligaciones tributarias de gran escala.",
+            "metas": "Maximizar la rotación de materiales pesados (cemento, varilla de acero), optimizar el inventario de herramientas de alto valor (soldadoras Lincoln, rotomartillos DeWalt) and proyectar el flujo de caja para cumplir con las obligaciones tributarias de gran escala.",
             "moneda": "Q"
         },
         "datos_empresa": {
